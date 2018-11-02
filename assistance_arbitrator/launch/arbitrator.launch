@@ -3,14 +3,14 @@
   <arg name="sim" default="false" />
 
   <!-- Launch each of the detectors -->
-  <!-- <node name="base_collision_monitor" pkg="assistance_arbitrator" type="base_collision_monitor.py" /> -->
-  <!-- <node name="base_stall_monitor" pkg="assistance_arbitrator" type="base_stall_monitor.py" /> -->
+  <node name="base_collision_monitor" pkg="assistance_arbitrator" type="base_collision_monitor.py" />
+  <node name="base_stall_monitor" pkg="assistance_arbitrator" type="base_stall_monitor.py" />
   <node name="battery_state_monitor" pkg="assistance_arbitrator" type="battery_state_monitor.py" />
   <node name="breaker_state_monitor" pkg="assistance_arbitrator" type="breaker_state_monitor.py" />
-  <!-- <node name="costmap_monitor" pkg="assistance_arbitrator" type="costmap_monitor.py" /> -->
+  <node name="costmap_monitor" pkg="assistance_arbitrator" type="costmap_monitor.py" />
   <node name="diagnostics_monitor" pkg="assistance_arbitrator" type="diagnostics_monitor.py" />
-  <!-- <node name="global_plan_monitor" pkg="assistance_arbitrator" type="global_plan_monitor.py" /> -->
-  <!-- <node name="localization_monitor" pkg="assistance_arbitrator" type="localization_monitor.py" /> -->
+  <node name="global_plan_monitor" pkg="assistance_arbitrator" type="global_plan_monitor.py" />
+  <node name="localization_monitor" pkg="assistance_arbitrator" type="localization_monitor.py" />
   <node name="octomap_monitor" pkg="assistance_arbitrator" type="octomap_monitor.py" />
 
   <!-- Simulation only detectors -->
