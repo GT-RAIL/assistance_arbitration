@@ -185,25 +185,23 @@ class ROSGraphMonitor(object):
         "/database/trajectory",
         "/execute_kinematic_path",
         # # find_grasps
-        # "/suggester/suggest_grasps",
-        # "/suggester/pairwise_rank",
+        "/suggester/suggest_grasps",
+        "/suggester/pairwise_rank",
         # # find_object
-        # "/database/object_constraints",
-        # "/rail_segmentation/segment_objects",
-        # "/grasp_executor/add_object",
-        # "/grasp_executor/clear_objects",
+        "/database/object_constraints",
+        "/rail_segmentation/segment_objects",
+        "/grasp_executor/add_object",
+        "/grasp_executor/clear_objects",
         # listen
         "/get_last_speech_cmd",
         # # move
-        # "/database/waypoints",
+        "/database/waypoints",
         # # place
-        # "/grasp_executor/drop_object",
+        "/grasp_executor/drop_object",
         # toggle_breakers
         "/arm_breaker",
         "/base_breaker",
         "/gripper_breaker",
-        # verify_grasp
-        "/grasp_verifier/verify",
     ])
 
     def __init__(self):
