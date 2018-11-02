@@ -1,217 +1,131 @@
 tasks:
+  # Perception is a task comprising of the find_objects and find_grasps subtasks
+  perceive:
+    params:
+    - obj
+
+    var:
+    - cube_idx
+    - grasps
+
+    steps:
+    - action: look
+      params:
+        pose: {x: 1.5, y: 0.0, z: -1.0, frame: "base_link"}
+
+    - action: find_object
+      params:
+        obj: params.obj
+      var:
+      - found_idx
+      - found_obj
+
+    - action: find_grasps
+      params:
+        segmented_obj: var.found_obj
+      var:
+      - grasps
+
+    - op: assign
+      params:
+        var_name: cube_idx
+        value: var.found_idx
+      var:
+      - cube_idx
+
+  # Approaching a pickup or dropoff location
+  approach:
+    params:
+      - pre_loc
+      - loc
+
+    steps:
+    # Move to the location and untuck the arm. Assume the torso is 0 and arm
+    # is tucked
+    - action: move
+      params:
+        location: params.pre_loc
+
+    - action: torso
+      params:
+        height: 0.4
+
+    - action: arm
+      params:
+        poses: trajectories.tuck_to_stow
+
+    # Clear out the costmap
+    - action: look
+      params:
+        pose: {x: 1.5, y: 0.0, z: -1.0, frame: "base_link"}
+
+    - action: look
+      params:
+        pose: {x: 50.0, y: 0.0, z: -1.0, frame: "base_link"}
+
+    # Move to the actual location and put the arm in ready
+    - action: move
+      params:
+        location: params.loc
+
+    - action: arm
+      params:
+        poses: poses.ready
+
+  # Departing a pickup or dropoff location.
+  depart:
+    params:
+      - loc
+      - post_loc
+
+    steps:
+    # Set the arm to ready, and then to stow. Assume the torso is at max height
+    - action: arm
+      params:
+        poses: poses.ready
+
+    - action: arm
+      params:
+        poses: poses.stow
+
+    # Clear out the costmap
+    - action: look
+      params:
+        pose: {x: 1.5, y: 0.0, z: -1.0, frame: "base_link"}
+
+    - action: look
+      params:
+        pose: {x: 50.0, y: 0.0, z: -1.0, frame: "base_link"}
+
+    # Move to the departure staging area and tuck the arm
+    - action: move
+      params:
+        location: params.post_loc
+
+    - action: arm
+      params:
+        poses: trajectories.stow_to_tuck
+
+    - action: torso
+      params:
+        height: 0.0
+
   # Task used for testing subsets of the main task
   test:
     steps:
     - action: arm
       params:
-        poses: joint_poses.ready
+        poses: poses.tuck
 
-  # Task for setting up Halloween
-  setup:
-    steps:
     - action: torso
       params:
-        height: 0.25
+        height: 0.0
 
-    - task: idle1
-
-    - action: arm
+    - action: move
       params:
-        poses: joint_poses.pre_pick
-        look_at_gripper: true
+        location: locations.pre_table1
 
-    - action: gripper
-      params:
-        command: 'open'
-
-    - action: beep
-      params:
-        beep: proud
-
-  # The pre-pick task
-  pre_pick:
-    steps:
-    - action: gripper
-      params:
-        command: open
-
-    - action: detach_candy
-
-    - action: arm
-      params:
-        poses: joint_poses.pre_pick
-        max_velocity_scaling: 0.8
-
-  # The verification tasks
-  move_arm_and_verify:
-    params:
-    - arm_pose
-
-    var:
-    - not_picked
-
-    steps:
-    - action: arm
-      params:
-        poses: params.arm_pose
-        max_velocity_scaling: 0.8
-
-    - action: verify_grasp
-      var:
-      - candy_picked
-
-    - op: negate
-      params:
-        var_name: candy_picked
-        negate_name: not_picked
-      var:
-      - not_picked
-
-  verify:
-    var:
-    - not_picked
-
-    steps:
-    - action: look
-      params:
-        pose: { x: 0.3, y: 0.0, z: 0.1, frame: "base_link" }
-
-    - task: move_arm_and_verify
-      params:
-        arm_pose: joint_poses.candy_verify_1
-      var:
-      - not_picked
-
-    - choice: candy_verify_2
-      params:
-        condition: var.not_picked
-        if_true:
-          task: move_arm_and_verify
-          params:
-            arm_pose: joint_poses.candy_verify_2
-          var:
-          - not_picked
-
-  # The stir task
-  stir:
-    steps:
-    - action: speak
-      params:
-        text: "Oops!"
-        async: true
-
-    - action: detach_candy
-
-    - action: gripper
-      params:
-        command: open
-
-    - action: arm
-      params:
-        poses: joint_poses.pre_pick
-        max_velocity_scaling: 0.8
-
-    - action: stir
-
-    - action: beep
-      params:
-        beep: concerned
-        async: true
-
-  # The post verify task
-  post_verify:
-    steps:
-    - action: beep
-      params:
-        beep: playful
-        async: true
-
-    - action: look
-      params:
-        pose: gripper_poses.default_drop
-
-    - action: wait
-      params:
-        duration: 0.2
-
-  # The pick loop
-  pick_loop:
-    var:
-    - not_picked
-
-    steps:
-    - action: beep
-      params:
-        beep: unsure
-        async: true
-
-    - action: pick_candy
-
-    - action: beep
-      params:
-        beep: surprised
-        async: true
-
-    - task: verify
-      var:
-      - not_picked
-
-    - choice: stir_check
-      params:
-        condition: var.not_picked
-        if_true:
-          task: stir
-        if_false:
-          task: post_verify
-
-  # The post-pick task
-  post_pick:
-    var:
-    - drop_pose
-
-    steps:
-    - op: assign
-      params:
-        var_name: drop_pose
-        value: gripper_poses.default_drop
-      var:
-      - drop_pose
-
-    - action: joystick_trigger
-      var:
-      - choice
-
-    # - action: find_bag_pose
-    #   params:
-    #     detection_mode: depth
-    #     timeout: 2.0
-    #   var:
-    #   - bag_pose
-
-    # This is a stub
-
-  # The drop task
-  drop:
-    params:
-    - drop_pose
-
-    steps:
-    - action: arm
-      params:
-        poses: params.drop_pose
-
-    - action: drop_candy
-
-    - action: beep
-      params:
-        beep: proud
-
-    - action: arm
-      params:
-        poses: joint_poses.pre_pick
-        look_at_gripper: true
-
-  # The main trick-or-treat task
+  # The main fetch and deliver task that we want to make robust
   main:
     steps:
     - action: beep
@@ -219,305 +133,92 @@ tasks:
         beep: cheerful
         async: true
 
-    - action: background_task
+    - action: torso
       params:
-        task: [dialogue1_1, dialogue1_2, dialogue1_3]
+        height: 0.4
 
-    # Move to pre-pick
-    - task: pre_pick
+    - action: arm
+      params:
+        poses: poses.tuck
+        look_at_gripper: true
 
-    # The pick-verify loop
-    # - op: assign
-    #   params:
-    #     var_name: not_picked
-    #     value: false
-    #   var:
-    #   - not_picked
+    - action: torso
+      params:
+        height: 0.0
 
-    # - loop: pick_verify_loop
-    #   params:
-    #     condition: var.not_picked
-    #     loop_body:
-    #       task: pick_loop
-    #       var:
-    #       - not_picked
-    - action: pick_candy
+    - action: beep
+      params:
+        beep: playful
+        async: true
+
+    - task: approach
+      params:
+        pre_loc: locations.pre_table1
+        loc: locations.table1
 
     - action: beep
       params:
         beep: surprised
         async: true
 
-    # Move to post-pick
-    - action: background_task
+    - task: perceive
       params:
-        task: [dialogue2, joke1, joke2, joke3, joke4, joke5, joke6, joke7]
-
-    - task: post_pick
+        obj: objects.cube
       var:
-      - drop_pose
+      - cube_idx
+      - grasps
 
-    # The drop task
-    - task: drop
+    - action: beep
       params:
-        drop_pose: var.drop_pose
-
-  # IDLE
-  idle1:
-    steps:
-    - action: gripper
-      params:
-        command: 'open'
-
-    - action: look
-      params:
-        pose: {x: 5.0, y: 0.0, z: 1.0, frame: "base_link"}
-
-    - action: arm
-      params:
-        poses: joint_poses.hat_reach_start
-        max_velocity_scaling: 0.8
-        look_at_gripper: true
-
-    - action: look
-      params:
-        pose: {x: 5.0, y: 0.0, z: 1.0, frame: "base_link"}
-
-    - action: hat
-      params:
-        command: hat_reach
-
-    - action: speak
-      params:
-        text: "Greetings! I do not have <prosody rate=\"x-slow\">a</prosody> monopoly on <prosody rate=\"x-slow\">sweeets</prosody>"
-        affect: ""
+        beep: unsure
         async: true
 
-    - action: gripper
+    - action: pick
       params:
-        command: close
+        cube_idx: var.cube_idx
+        grasps: var.grasps
 
-    - action: hat
+    - action: beep
       params:
-        command: hat_maneuver
-
-    - action: speak
-      params:
-        text: "I simply have market share"
-        affect: ""
+        beep: happy
         async: true
 
-    - action: gripper
+    - task: depart
       params:
-        command: open
+        loc: locations.table1
+        post_loc: locations.post_table1
 
-    - action: hat
+    - action: beep
       params:
-        command: hat_retract
+        beep: excited
+        async: true
 
-    - action: arm
+    - task: approach
       params:
-        poses: joint_poses.pre_pick
-        max_velocity_scaling: 0.8
-        look_at_gripper: true
+        pre_loc: locations.pre_table2
+        loc: locations.table2
 
-  # Dialogues
-  dialogue1_1:
-    steps:
     - action: look
       params:
-        pose: gripper_poses.default_drop
+        pose: {x: 1.5, y: 0.0, z: -1.0, frame: "base_link"}
 
-    - action: speak
+    - action: beep
       params:
-        text: "Why, hello there! What is your name?"
-        affect: ""
+        beep: unsure
+        async: true
 
-  dialogue1_2:
-    steps:
-    - action: look
+    - action: place
+
+    - action: beep
       params:
-        pose: gripper_poses.default_drop
+        beep: proud
+        async: true
 
-    - action: speak
+    - task: depart
       params:
-        text: "What is your name, little one?"
-        affect: ""
+        loc: locations.table2
+        post_loc: locations.post_table2
 
-  dialogue1_3:
-    steps:
-    - action: look
+    - action: beep
       params:
-        pose: gripper_poses.default_drop
-
-    - action: speak
-      params:
-        text: "Hello hello! What is your name?"
-        affect: ""
-
-  dialogue2:
-    steps:
-    - action: look
-      params:
-        pose: gripper_poses.default_drop
-
-    - action: speak
-      params:
-        text: "And what are you dressed as today?"
-        affect: ""
-
-  joke1:
-    steps:
-    - action: look
-      params:
-        pose: gripper_poses.default_drop
-
-    - action: speak
-      params:
-        text: "What do owls say when they go trick or treating?"
-        affect: ""
-        async: false
-
-    - action: wait
-      params:
-        duration: 5.0
-
-    - action: speak
-      params:
-        text: "Happy Owl-ween!"
-        affect: ""
-        async: false
-
-  joke2:
-    steps:
-    - action: look
-      params:
-        pose: gripper_poses.default_drop
-
-    - action: speak
-      params:
-        text: "What do they teach in witching school?"
-        affect: ""
-        async: false
-
-    - action: wait
-      params:
-        duration: 5.0
-
-    - action: speak
-      params:
-        text: "Spelling."
-        affect: ""
-        async: false
-
-  joke3:
-    steps:
-    - action: look
-      params:
-        pose: gripper_poses.default_drop
-
-    - action: speak
-      params:
-        text: "What song do vampires hate?"
-        affect: ""
-        async: false
-
-    - action: wait
-      params:
-        duration: 5.0
-
-    - action: speak
-      params:
-        text: "You Are My Sunshine."
-        affect: ""
-        async: false
-
-  joke4:
-    steps:
-    - action: look
-      params:
-        pose: gripper_poses.default_drop
-
-    - action: speak
-      params:
-        text: "What type of monster loves dance music?"
-        affect: ""
-        async: false
-
-    - action: wait
-      params:
-        duration: 5.0
-
-    - action: speak
-      params:
-        text: "The boogieman!"
-        affect: ""
-        async: false
-
-  joke5:
-    steps:
-    - action: look
-      params:
-        pose: gripper_poses.default_drop
-
-    - action: speak
-      params:
-        text: "Who are cousins of the werewolf?"
-        affect: ""
-        async: false
-
-    - action: wait
-      params:
-        duration: 5.0
-
-    - action: speak
-      params:
-        text: "What-wolf and When-wolf."
-        affect: ""
-        async: false
-
-  joke6:
-    steps:
-    - action: look
-      params:
-        pose: gripper_poses.default_drop
-
-    - action: speak
-      params:
-        text: "What do you call a skeleton that sits around all day?"
-        affect: ""
-        async: false
-
-    - action: wait
-      params:
-        duration: 5.0
-
-    - action: speak
-      params:
-        text: "A lazy bone."
-        affect: ""
-        async: false
-
-  joke7:
-    steps:
-    - action: look
-      params:
-        pose: gripper_poses.default_drop
-
-    - action: speak
-      params:
-        text: "Which room do ghost houses never have?"
-        affect: ""
-        async: false
-
-    - action: wait
-      params:
-        duration: 5.0
-
-    - action: speak
-      params:
-        text: "The living room."
-        affect: ""
-        async: false
-
-
+        beep: happy
