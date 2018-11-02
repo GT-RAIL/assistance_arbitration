@@ -13,7 +13,7 @@ from .arm import ArmAction
 class PlaceAction(AbstractStep):
 
     DROP_OBJECT_SERVICE_NAME = "/grasp_executor/drop_object"
-    DROP_POSE_NAME = "poses.drop"  # This is from the poses database
+    DROP_POSE_NAME = "joint_poses.drop"  # This is from the poses database
 
     def init(self, name):
         self.name = name
