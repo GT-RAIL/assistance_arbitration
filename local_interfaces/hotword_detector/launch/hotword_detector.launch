@@ -1,9 +1,0 @@
-<!-- Hotword Detection Demo -->
-
-<launch>
-    <!-- Run the Instance DB -->
-    <node pkg="hotword_detector" type="hotword_detector_node" name="hotword_detector" output="screen">
-        <param name="model_dir" value="/src/hotword_detector/resources/"/>
-    </node>
-
-</launch>

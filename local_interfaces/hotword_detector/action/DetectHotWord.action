@@ -1,4 +1,0 @@
-float64 timeout  # If > 0, then return false if the hotword is not detected in timeout
----
-bool reply
----
