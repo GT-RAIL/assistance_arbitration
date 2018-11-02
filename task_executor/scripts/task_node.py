@@ -7,7 +7,7 @@ from task_executor.server import TaskServer
 
 
 def main():
-    rospy.init_node('executor')
+    rospy.init_node('task_executor')
     server = TaskServer()
     server.start()
     rospy.spin()

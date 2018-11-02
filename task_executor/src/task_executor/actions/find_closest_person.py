@@ -50,10 +50,10 @@ class FindClosestPersonAction(AbstractStep):
         self._look_action.init('look_find_people')
         self._beep_action.init('beep_find_people')
 
-    def run(self, max_duration=0.0):
-        # A max duration of 0 implies infinite
+    def run(self, timeout=0.0):
+        # A timeout of 0 implies infinite
         rospy.loginfo("Action {}: Finding person within time {}s"
-                      .format(self.name, max_duration))
+                      .format(self.name, timeout))
 
         # Set the flags for finding and waiting for a person
         self._stopped = False
@@ -80,15 +80,15 @@ class FindClosestPersonAction(AbstractStep):
                             if self._stopped:
                                 yield self.set_preempted(
                                     action=self.name,
-                                    goal=max_duration,
+                                    goal=timeout,
                                     search_duration=(rospy.Time.now() - search_start_time).to_sec()
                                 )
                                 raise StopIteration()
 
-                            if max_duration > 0 and rospy.Time.now() - search_start_time > rospy.Duration(max_duration):
+                            if timeout > 0 and rospy.Time.now() - search_start_time > rospy.Duration(timeout):
                                 yield self.set_aborted(
                                     action=self.name,
-                                    goal=max_duration,
+                                    goal=timeout,
                                     search_duration=(rospy.Time.now() - search_start_time).to_sec()
                                 )
                                 raise StopIteration()

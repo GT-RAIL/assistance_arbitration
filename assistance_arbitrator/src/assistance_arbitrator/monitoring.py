@@ -180,8 +180,10 @@ class ROSGraphMonitor(object):
     # interested in knowing the providers of. TODO: Automate this process...?
     SERVICES_OF_INTEREST = set([
         # arm
-        "/database/arm_pose",
+        "/database/arm_gripper_pose",
+        "/database/arm_joint_pose",
         "/database/trajectory",
+        "/execute_kinematic_path",
         # find_grasps
         "/suggester/suggest_grasps",
         "/suggester/pairwise_rank",

@@ -19,7 +19,7 @@ class BeepAction(AbstractStep):
 
     def run(self, beep, async=False):
         # Check to see if we know about this beep type
-        if type(beep) != str \
+        if not isinstance(beep, str) \
                 or beep.upper() not in self._beep_client.get_beep_names():
             rospy.logerr("Action {}: FAIL. Unrecognized: {}.".format(self.name, beep))
             raise KeyError(self.name, "Unrecognized", beep)

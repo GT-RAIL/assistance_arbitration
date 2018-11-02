@@ -1,4 +1,0 @@
-# Get an arm pose based on its name
-string name
----
-ArmPose pose

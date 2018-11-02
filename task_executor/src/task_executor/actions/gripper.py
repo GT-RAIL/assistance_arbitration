@@ -13,7 +13,7 @@ from actionlib_msgs.msg import GoalStatus
 class GripperAction(AbstractStep):
 
     GRIPPER_ACTION_SERVER = "/gripper_controller/gripper_action"
-    GRIPPER_MAX_EFFORT = 200
+    GRIPPER_MAX_EFFORT = 50
     GRIPPER_OPEN_POSITION = 0.15
     GRIPPER_CLOSE_POSITION = 0.0
 
@@ -29,7 +29,7 @@ class GripperAction(AbstractStep):
         rospy.loginfo("...gripper_controller connected")
 
     def run(self, command):
-        if type(command) != str or command.lower() not in ['close', 'open']:
+        if not isinstance(command, str) or command.lower() not in ['close', 'open']:
             rospy.logerr("Action: {}. FAIL. Unrecognized: {}".format(self.name, command))
             raise KeyError(self.name, "Unrecognized", command)
 

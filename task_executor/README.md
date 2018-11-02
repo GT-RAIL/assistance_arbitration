@@ -17,8 +17,9 @@ In order to execute a task, the package also provides a construct for the backgr
 
 - `object_constraints` (type: [ObjectConstraints](msg/ObjectConstraints.msg)). The constraints to use when trying to recognize objects relevant to a task.
 - `waypoints` (type: [Waypoint](msg/Waypoint.msg)[]). The `(x, y, theta)` poses to follow when navigating to different goals.
-- `arm_poses` (type: [ArmPose](msg/ArmPose.msg)). A predefined set of joint angles for the arm, e.g., the tuck pose.
-- `trajectories` (type: [ArmPose](msg/ArmPose.msg)[]). A predefined trajectory of arm poses to use when moving from one arm pose to another. This is often used when MoveIt! planning might create unsafe trajectories.
+- `arm_gripper_pose` (type: geometry_msgs/PoseStamped). A predefined PoseStamped for the gripper.
+- `arm_joint_pose` (type: [ArmJointPose](msg/ArmJointPose.msg)). A predefined set of joint angles for the arm, e.g., the tuck pose.
+- `trajectories` (type: [ArmJointPose](msg/ArmJointPose.msg)[]). A predefined trajectory of arm poses to use when moving from one arm pose to another. This is often used when MoveIt! planning might create unsafe trajectories.
 
 The knowledge that we store is often environment dependent, with the data stored for [simulation](config/simulation.yaml) different from that stored for the [robot](config/robot.yaml).
 

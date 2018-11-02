@@ -10,8 +10,13 @@
     <rosparam command="load" file="$(arg data_config)" />
   </node>
 
-  <!-- The execution node -->
-  <node name="task_executor" pkg="task_executor" type="server_node.py" output="screen">
+  <!-- The task execution node -->
+  <node name="task_executor" pkg="task_executor" type="task_node.py" output="screen">
+    <rosparam command="load" file="$(arg task_config)" />
+  </node>
+
+  <!-- The idle behaviour node -->
+  <node name="idle_executor" pkg="task_executor" type="idle_behaviour_node.py" output="screen">
     <rosparam command="load" file="$(arg task_config)" />
   </node>
 </launch>

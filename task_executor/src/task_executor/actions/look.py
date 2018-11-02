@@ -8,6 +8,7 @@ from task_executor.abstract_step import AbstractStep
 
 from control_msgs.msg import PointHeadAction, PointHeadGoal
 from actionlib_msgs.msg import GoalStatus
+from task_executor.srv import GetArmGripperPose
 
 
 class LookAction(AbstractStep):
@@ -15,12 +16,15 @@ class LookAction(AbstractStep):
     HEAD_ACTION_SERVER = "/head_controller/point_head"
     HEAD_ACTION_DURATION = 0.5
 
+    ARM_GRIPPER_POSES_SERVICE_NAME = "/database/arm_gripper_pose"
+
     def init(self, name):
         self.name = name
         self._look_client = actionlib.SimpleActionClient(
             LookAction.HEAD_ACTION_SERVER,
             PointHeadAction
         )
+        self._get_arm_gripper_pose_srv = rospy.ServiceProxy(LookAction.ARM_GRIPPER_POSES_SERVICE_NAME, GetArmGripperPose)
 
         self._duration = LookAction.HEAD_ACTION_DURATION
 
@@ -28,16 +32,26 @@ class LookAction(AbstractStep):
         self._look_client.wait_for_server()
         rospy.loginfo("...head_controller connected")
 
+        rospy.loginfo("Connecting to database services...")
+        self._get_arm_gripper_pose_srv.wait_for_service()
+        rospy.loginfo("...database services connected")
+
     def run(self, pose):
         rospy.logdebug("Action {}: Looking at point: {}".format(self.name, pose))
+
+        # Parse out the pose
+        parsed_pose = self._parse_pose(pose)
+        if parsed_pose is None:
+            rospy.logerr("Action {}: FAIL. Unknown Format: {}".format(self.name, pose))
+            raise KeyError(self.name, "Unknown Format", pose)
 
         # Create and send the goal pose
         goal = PointHeadGoal()
         goal.target.header.stamp = rospy.Time.now()
-        goal.target.header.frame_id = pose['frame']
-        goal.target.point.x = pose['x']
-        goal.target.point.y = pose['y']
-        goal.target.point.z = pose['z']
+        goal.target.header.frame_id = parsed_pose['frame']
+        goal.target.point.x = parsed_pose['x']
+        goal.target.point.y = parsed_pose['y']
+        goal.target.point.z = parsed_pose['z']
         goal.min_duration = rospy.Duration(self._duration)
         self._look_client.send_goal(goal)
         self.notify_action_send_goal(LookAction.HEAD_ACTION_SERVER, goal)
@@ -58,17 +72,44 @@ class LookAction(AbstractStep):
             yield self.set_preempted(
                 action=self.name,
                 status=status,
-                goal=pose,
+                goal=goal,
                 result=result
             )
         else:
             yield self.set_aborted(
                 action=self.name,
                 status=status,
-                goal=pose,
+                goal=goal,
                 result=result
             )
 
     def stop(self):
         self._look_client.cancel_goal()
         self.notify_action_cancel(LookAction.HEAD_ACTION_SERVER)
+
+    def _parse_pose(self, pose):
+        parsed_pose = None
+
+        if isinstance(pose, str):
+            # This is a reference to poses stored in the DB
+            db_name, pose = pose.split('.', 1)
+            if db_name == 'gripper_poses':
+                pose_stamped = self._get_arm_gripper_pose_srv(pose).pose
+                self.notify_service_called(LookAction.ARM_GRIPPER_POSES_SERVICE_NAME)
+                parsed_pose = {
+                    'x': pose_stamped.pose.position.x,
+                    'y': pose_stamped.pose.position.y,
+                    'z': pose_stamped.pose.position.z,
+                    'frame': pose_stamped.header.frame_id,
+                }
+        elif isinstance(pose, dict) and pose.has_key('x'):
+            parsed_pose = pose
+        elif isinstance(pose, dict) and pose.has_key('position'):
+            parsed_pose = {
+                'frame': pose['frame'],
+                'x': pose['position']['x'],
+                'y': pose['position']['y'],
+                'z': pose['position']['z'],
+            }
+
+        return parsed_pose

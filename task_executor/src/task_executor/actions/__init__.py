@@ -6,11 +6,13 @@ from __future__ import print_function
 from task_executor.abstract_step import AbstractStep
 
 from .arm import ArmAction
+from .background_task import BackgroundTaskAction
 from .beep import BeepAction
 from .find_closest_person import FindClosestPersonAction
 from .find_grasps import FindGraspsAction
 from .find_object import FindObjectAction
 from .gripper import GripperAction
+from .joystick_trigger import JoystickTriggerAction
 from .listen import ListenAction
 from .look import LookAction
 from .look_at_closest_person import LookAtClosestPersonAction
@@ -21,6 +23,7 @@ from .place import PlaceAction
 from .speak import SpeakAction
 from .toggle_breakers import ToggleBreakersAction
 from .torso import TorsoAction
+from .wait import WaitAction
 
 
 class Actions(object):
@@ -51,11 +54,13 @@ class Actions(object):
 # package
 default_actions_dict = {
     'arm': ArmAction,
+    'background_task': BackgroundTaskAction,
     'beep': BeepAction,
     'find_closest_person': FindClosestPersonAction,
     'find_grasps': FindGraspsAction,
     'find_object': FindObjectAction,
     'gripper': GripperAction,
+    'joystick_trigger': JoystickTriggerAction,
     'listen': ListenAction,
     'look': LookAction,
     'look_at_closest_person': LookAtClosestPersonAction,

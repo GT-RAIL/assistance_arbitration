@@ -1,0 +1,43 @@
+node: ''
+
+
+include_regex:
+- "/diagnostics(.*)"
+- /topology
+- /clock
+
+- /execution_monitor/trace
+
+- /joy
+- "/cmd_vel(.*)"
+- /robot_state
+- "/tf(.*)"
+- /joint_states
+- /odom
+
+- "/arm_controller/follow_joint_trajectory/(.*)"
+- "/gripper_controller/(.*)"
+- /gripper_state
+- "/head_controller/(follow_joint_trajectory|point_head)/(.*)"
+- "/torso_controller/follow_joint_trajectory/(.*)"
+
+- "/arbitrator/(.*)"
+- "/idle_executor/(.*)"
+- "/local_strategy/(.*)"
+- "/remote_strategy/(.*)"
+- "/task_executor/(.*)"
+
+- "/sound_server/(.*)"
+
+- /move_base/(cancel|feedback|goal|result|status)
+
+- "/grasp_executor/preset_position/(.*)"
+- "/grasp_executor/execute_grasp/(.*)"
+- /move_group/(cancel|feedback|goal|result|status|monitored_planning_scene|motion_plan_request)
+- /planning_scene
+- /planning_scene_world
+- /collision_object
+- /trajectory_execution_event
+
+
+exclude_regex: []

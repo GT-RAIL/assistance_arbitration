@@ -22,15 +22,15 @@ The different keys and values in the errors that are sent with the assistance re
 - **status** - GoalStatus code of action client
 - **context** - the pickled details from the lower levels of the tree
 - **goal** - transformed version of argument sent to run
-    - arm:pose_waypoints - the series of waypoints to take the arm to
+    - arm:pose - the pose of the arm that failed
     - beep:beep - name of the beep key
-    - find_closest_person:max_duration - the max amount of time, float, within which to find a person
+    - find_closest_person:timeout - the max amount of time, float, within which to find a person
     - find_grasps:segmented_obj - of type rail_manipulation_msgs/SegmentedObject
     - find_object:obj - the string name of the object in the DB
     - gripper:command - open/close command sent
     - listen:expected_cmd - the speech command that we were expecting
     - look:pose - dictionary of the pose to look at
-    - move:coords - list of waypoints to visit
+    - move:coord - the waypoint coordinate that failed
     - pick:cube_idx - the index of the cube in the segmented objects list
     - speak:text - the text to speak
     - torso:heigh - the height in float to raise the torso to
@@ -50,9 +50,6 @@ The different keys and values in the errors that are sent with the assistance re
     - find_object:grasp_executor/clear_objects
     - find_object:grasp_executor/add_object
     - place:grasp_executor/drop_object
-- **orig_goal** - original argument to run
-    - arm:poses - the original name of the poses, or perhaps the list of poses
-    - move:location - the original name of the waypoints, or the list of them
 - **attempt_num** - idx of the arm movement attempt when run stopped. Only arm
 - **num_grasps** - number of grasps found be suggester/suggest_grasps. Only find_grasps and pick
 - **segmented_objects** - of type rail_manipulation_msgs/SegmentedObjectList; segmented objects returned by RAIL segmentation. Only find_object

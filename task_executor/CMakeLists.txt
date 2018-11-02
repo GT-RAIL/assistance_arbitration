@@ -65,7 +65,7 @@ add_message_files(
   Waypoint.msg
   ObjectConstraints.msg
   Bounds.msg
-  ArmPose.msg
+  ArmJointPose.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -73,7 +73,8 @@ add_service_files(
   FILES
   GetWaypoints.srv
   GetObjectConstraints.srv
-  GetArmPose.srv
+  GetArmGripperPose.srv
+  GetArmJointPose.srv
   GetTrajectory.srv
 )
 

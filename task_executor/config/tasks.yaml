@@ -70,7 +70,7 @@ tasks:
 
     - action: arm
       params:
-        poses: poses.ready
+        poses: joint_poses.ready
 
   # Departing a pickup or dropoff location.
   depart:
@@ -82,11 +82,11 @@ tasks:
     # Set the arm to ready, and then to stow. Assume the torso is at max height
     - action: arm
       params:
-        poses: poses.ready
+        poses: joint_poses.ready
 
     - action: arm
       params:
-        poses: poses.stow
+        poses: joint_poses.stow
 
     # Clear out the costmap
     - action: look
@@ -115,7 +115,7 @@ tasks:
     steps:
     - action: arm
       params:
-        poses: poses.tuck
+        poses: joint_poses.tuck
 
     - action: torso
       params:
@@ -139,7 +139,7 @@ tasks:
 
     - action: arm
       params:
-        poses: poses.tuck
+        poses: joint_poses.tuck
         look_at_gripper: true
 
     - action: torso

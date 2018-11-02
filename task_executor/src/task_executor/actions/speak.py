@@ -17,9 +17,9 @@ class SpeakAction(AbstractStep):
         self._speak_client = SoundClient()
         self._stopped = False
 
-    def run(self, text, affect=""):
+    def run(self, text, affect="", async=False):
         # Check to see if we know about this affect type
-        if type(text) != str \
+        if not isinstance(text, str) \
                 or (affect and affect.upper() not in self._speak_client.get_affect_names()):
             rospy.logerr("Action {}: FAIL. Invalid Args: {} (affect: {})."
                          .format(self.name, text, affect))
@@ -29,9 +29,14 @@ class SpeakAction(AbstractStep):
         affect = affect.upper()
         rospy.loginfo("Action {}: {} (affect: {})".format(self.name, text, affect))
 
-        # Send the command to play the speech and wait
+        # Send the command to play the speech
         self._speak_client.say(text, affect, blocking=False)
         self.notify_action_send_goal(SoundClient.SOUND_PLAY_SERVER, (text, affect,))
+        if async:
+            yield self.set_succeeded()
+            raise StopIteration()
+
+        # Wait for a result
         while self._speak_client.get_state() in AbstractStep.RUNNING_GOAL_STATES:
             if self._stopped:
                 break

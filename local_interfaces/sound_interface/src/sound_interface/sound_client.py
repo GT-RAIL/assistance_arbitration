@@ -50,17 +50,20 @@ class SoundClient(object):
     package that begins with `SOUND_*`. By default, the sound files in `sounds`
     map to one of these keys.
 
-    To speak, you can use EmotionML syntax to specify text. The TTS interface
+    To speak, you can use SSML syntax to specify text. The TTS interface
     expects a MaryTTS server running in the background. The TTS could be a long
     running process and is currently blocking.
     """
 
-    # Template EmotionML
-    EMOTIONML_TEMPLATE = \
-    """<emotionml version="1.0" xmlns="http://www.w3.org/2009/10/emotionml"
-category-set="http://www.w3.org/TR/emotion-voc/xml#everyday-categories">
+    # Template SSML
+    SSML_TEMPLATE = \
+    """<?xml version="1.0" encoding="UTF-8" ?>
+<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.w3.org/2001/10/synthesis http://www.w3.org/TR/speech-synthesis/synthesis.xsd"
+  xml:lang="en-US">
 {speech}
-</emotionml>
+</speak>
     """
 
     # Keys for the different beeps
@@ -95,45 +98,63 @@ category-set="http://www.w3.org/TR/emotion-voc/xml#everyday-categories">
     @staticmethod
     def make_happy(text):
         """Make the text happy!"""
-        return ('<emotion><category name="happy" />{}</emotion>'.format(text))
+        # return ('<emotion><category name="happy" />{}</emotion>'.format(text))
+        return text
 
     @staticmethod
     def make_sad(text):
         """Make the text sad :("""
-        return ('<emotion><category name="sad" />{}</emotion>'.format(text))
+        # return ('<emotion><category name="sad" />{}</emotion>'.format(text))
+        return text
 
     @staticmethod
     def make_angry(text):
         """Make the text angry"""
-        return ('<emotion><category name="angry" />{}</emotion>'.format(text))
+        # return ('<emotion><category name="angry" />{}</emotion>'.format(text))
+        return text
 
     @staticmethod
     def make_calm(text):
         """Make the text calm"""
-        return (
-            """
-        <emotion dimension-set="http://www.w3.org/TR/emotion-voc/xml#pad-dimensions">
-            {}
-            <dimension name="arousal" value="0.3"/><!-- lower arousal -->
-            <dimension name="pleasure" value="0.9"/><!-- high positive valence -->
-            <dimension name="dominance" value="0.8"/><!-- high potency    -->
-        </emotion>
-            """.format(text)
-        )
+        # return (
+        #     """
+        # <emotion dimension-set="http://www.w3.org/TR/emotion-voc/xml#pad-dimensions">
+        #     {}
+        #     <dimension name="arousal" value="0.3"/><!-- lower arousal -->
+        #     <dimension name="pleasure" value="0.9"/><!-- high positive valence -->
+        #     <dimension name="dominance" value="0.8"/><!-- high potency    -->
+        # </emotion>
+        #     """.format(text)
+        # )
+        return text
 
     @staticmethod
     def make_nervous(text):
         """Make the text nervous"""
-        return (
-            """
-        <emotion dimension-set="http://www.w3.org/TR/emotion-voc/xml#pad-dimensions">
-            {}
-            <dimension name="arousal" value="0.9"/><!-- high arousal -->
-            <dimension name="pleasure" value="0.2"/><!-- negative valence -->
-            <dimension name="dominance" value="0.2"/><!-- low potency    -->
-        </emotion>
-            """.format(text)
-        )
+        # return (
+        #     """
+        # <emotion dimension-set="http://www.w3.org/TR/emotion-voc/xml#pad-dimensions">
+        #     {}
+        #     <dimension name="arousal" value="0.9"/><!-- high arousal -->
+        #     <dimension name="pleasure" value="0.2"/><!-- negative valence -->
+        #     <dimension name="dominance" value="0.2"/><!-- low potency    -->
+        # </emotion>
+        #     """.format(text)
+        # )
+        return text
+
+    @staticmethod
+    def change_audio_speed(sound, speed=1.0):
+        # Manually override the frame_rate. This tells the computer how many
+        # samples to play per second
+        sound_with_altered_frame_rate = sound._spawn(sound.raw_data, overrides={
+            "frame_rate": int(sound.frame_rate * speed)
+        })
+
+        # convert the sound with altered frame rate to a standard frame rate
+        # so that regular playback programs will work right. They often only
+        # know how to play audio at standard frame rate (like 44.1k)
+        return sound_with_altered_frame_rate.set_frame_rate(sound.frame_rate)
 
     def __init__(self, beeps=None, affects=None):
         # Want to reimplement SoundClient so that we are always using the action
@@ -199,19 +220,19 @@ category-set="http://www.w3.org/TR/emotion-voc/xml#everyday-categories">
         return self.affects.keys()
 
     def say(self, text, affect="", blocking=False, **kwargs):
-        """Perform TTS using EmotionML"""
+        """Perform TTS using SSML"""
 
         # Transform the text if the affect argument calls for it
         if affect and affect.upper() in self.affects.keys():
             text = self.affects[affect.upper()](text)
 
-        # Create the vars for the EmotionML query
-        text = SoundClient.EMOTIONML_TEMPLATE.format(speech=text)
+        # Create the vars for the SSML query
+        text = SoundClient.SSML_TEMPLATE.format(speech=text)
         query_dict = {
             'INPUT_TEXT': text,
-            'INPUT_TYPE': 'EMOTIONML',
-            'LOCALE': 'en_GB',
-            'VOICE': 'dfki-prudence-hsmm',
+            'INPUT_TYPE': 'SSML',
+            'LOCALE': 'en_US',
+            'VOICE': 'cmu-rms',
             'OUTPUT_TYPE': 'AUDIO',
             'AUDIO': 'WAVE',
             # 'effect_Robot_selected': 'on',
@@ -232,6 +253,8 @@ category-set="http://www.w3.org/TR/emotion-voc/xml#everyday-categories">
         # Increase the volume on the temp file
         speech = AudioSegment(data=r.content)
         speech = speech + SoundClient.SPEECH_GAIN_DB
+        speech = SoundClient.change_audio_speed(speech, 0.95)
+        speech = speech.set_frame_rate(int(speech.frame_rate*2.0))
 
         # Write the wav data to a temp file
         speech_filename = create_temp_filename(prefix='marytts', suffix='.wav')
