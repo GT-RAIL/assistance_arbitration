@@ -9,13 +9,13 @@ import rospy
 import actionlib
 
 from actionlib_msgs.msg import GoalStatus
-from sensor_msgs.msg import Joy
 from assistance_msgs.msg import RequestAssistanceAction, RequestAssistanceResult
+from power_msgs.srv import BreakerCommand
 
-from task_executor.actions import get_default_actions, JoystickTriggerAction
+from task_executor.actions import get_default_actions
 from sound_interface import SoundClient
 
-# from .dialogue import DialogueManager
+from .dialogue import DialogueManager
 
 
 # The server performs local behaviours to resume execution after contact with
@@ -26,11 +26,6 @@ class LocalRecoveryServer(object):
     Given a request for assistance, this class interfaces with the robot's
     look, speech, and point modules to request assistance
     """
-
-    JOY_TOPIC = "/joy"
-    DISABLE_ARM_BREAKER_BUTTON = 7
-    ENABLE_ARM_BREAKER_BUTTON = 5
-    BUTTON_PRESS_TIMEOUT = rospy.Duration(0.5)
 
     def __init__(self):
         # Instantiate the action server to perform the recovery
@@ -44,16 +39,15 @@ class LocalRecoveryServer(object):
         # The actions that we are interested in using
         self.actions = get_default_actions()
 
-        # Also subscribe to the joystick topic in order to enable and disable
-        # the breakers
-        self._assisting = False                  # Flag for we-are-assisting
-        self._last_pressed = None                # Which button was pressed?
-        self._last_pressed_time = rospy.Time(0)  # Don't spam the breaker srv
-        self._joy_sub = rospy.Subscriber(LocalRecoveryServer.JOY_TOPIC, Joy, self._on_joy)
+        # The dialogue manager
+        self.dialogue_manager = DialogueManager()
 
     def start(self):
         # Initialize the actions
         self.actions.init()
+
+        # Initialize the dialogue manager
+        self.dialogue_manager.start()
 
         # Finally, start our action server to indicate that we're ready
         self._server.start()
@@ -66,71 +60,58 @@ class LocalRecoveryServer(object):
 
         rospy.loginfo("Serving Assistance Request for: {} (status - {})"
                       .format(goal.component, goal.component_status))
-        if goal.context != '':
-            goal.context = pickle.loads(goal.context)
-
-        # We ack the request now
-        result.stats.request_acked = rospy.Time.now()
-        self._assisting = True
+        goal.context = pickle.loads(goal.context)
 
         # The actual error recovery mechanism
         # Sad beep first
         self.actions.beep(beep=SoundClient.BEEP_SAD, async=True)
 
-        # Then wait for the joystick trigger
-        for variables in self.actions.joystick_trigger.run(binarize=False):
+        # First we look for a person.
+        for variables in self.actions.find_closest_person.run(max_duration=0.0):
             if self._server.is_preempt_requested() or not self._server.is_active():
-                self.actions.joystick_trigger.stop()
+                self.actions.find_closest_person.stop()
 
-        # Determine exit status if we are preempted
-        if self.actions.joystick_trigger.is_preempted():
+        # If we exited without success, report the failure. Otherwise, save the
+        # person that we found
+        if self.actions.find_closest_person.is_preempted():
             result.context = pickle.dumps(variables)
             self._server.set_preempted(result)
             return
 
-        # Then determine the eventual response based on the choice
-        # Happy beep before resuming
-        self.actions.beep(beep=SoundClient.BEEP_HAPPY, async=True)
-        choice = variables['choice']
-        if choice == JoystickTriggerAction.ACCEPT_BUTTON_IDX:
-            result.resume_hint = RequestAssistanceResult.RESUME_CONTINUE
-        elif choice == JoystickTriggerAction.RESTART_BUTTON_IDX:
-            result.resume_hint = RequestAssistanceResult.RESUME_RETRY
-        else:  # JoystickTriggerAction.REJECT_BUTTON_IDX
-            result.resume_hint = RequestAssistanceResult.RESUME_NONE
+        if self.actions.find_closest_person.is_aborted():
+            result.context = pickle.dumps(variables)
+            self._server.set_aborted(result)
+            return
 
-        # Finally, send the response back
-        self._assisting = False
+        person = variables['person']
+
+        # Show exceitement and solicit help from them
+        self.actions.beep(beep=SoundClient.BEEP_EXCITED)
+        for response in self.dialogue_manager.request_help(person):
+            if self._server.is_preempt_requested() or not self._server.is_active():
+                self.dialogue_manager.reset_dialogue()
+                self._server.set_preempted(result)
+                return
+
+        # If the person rejected the request for help, abort
+        if not response[DialogueManager.REQUEST_HELP_RESPONSE_KEY]:
+            result.context = pickle.dumps({ 'person': person, 'response': response })
+            self.dialogue_manager.reset_dialogue()
+            self._server.set_aborted(result)
+            return
+
+        # If they agree to provide help, then continue
+        result.stats.request_acked = rospy.Time.now()
+        for response in self.dialogue_manager.await_help(goal):
+            if self._server.is_preempt_requested() or not self._server.is_active():
+                self.dialogue_manager.reset_dialogue()
+                self._server.set_preempted(result)
+                return
+
+        # Return when the request for help is completed
+        result.resume_hint = response[DialogueManager.RESUME_HINT_RESPONSE_KEY]
         result.stats.request_complete = rospy.Time.now()
         self._server.set_succeeded(result)
 
     def stop(self):
         pass
-
-    def _on_joy(self, joy_msg):
-        # Check if we need to debounce the button press
-        if self._last_pressed_time + LocalRecoveryServer.BUTTON_PRESS_TIMEOUT >= rospy.Time.now():
-            # If the button is still pressed, update the time of press
-            if joy_msg.buttons[self._last_pressed] > 0:
-                self._last_pressed_time = rospy.Time.now()
-            return
-        elif self._last_pressed_time > rospy.Time(0) and \
-                self._last_pressed_time + LocalRecoveryServer.BUTTON_PRESS_TIMEOUT < rospy.Time.now():
-            # Reset the debounce
-            self._last_pressed_time = rospy.Time(0)
-            self._last_pressed = None
-            return
-
-        # Don't continue if we're not assisting
-        if not self._assisting:
-            return
-
-        # Finally, update the breakers accordingly
-        if joy_msg.buttons[LocalRecoveryServer.ENABLE_ARM_BREAKER_BUTTON] > 0:
-            self._last_pressed = LocalRecoveryServer.ENABLE_ARM_BREAKER_BUTTON
-            self._last_pressed_time = rospy.Time.now()
-            self.actions.toggle_breakers(enable_arm=True)
-        elif joy_msg.buttons[LocalRecoveryServer.DISABLE_ARM_BREAKER_BUTTON] > 0:
-            self._last_pressed = LocalRecoveryServer.DISABLE_ARM_BREAKER_BUTTON
-            self._last_pressed_time = rospy.Time.now()
-            self.actions.toggle_breakers(enable_arm=False)
