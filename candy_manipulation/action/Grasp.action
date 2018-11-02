@@ -1,6 +1,0 @@
-# These are joint angles as defined in task_executor/ArmJointPose.msg
-float64[] pick_pose
-float64[] post_pick_pose
----
-int32 error_code  # Error code as defined in moveit_msgs/MoveItErrorCodes.msg
----
