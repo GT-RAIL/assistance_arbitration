@@ -124,7 +124,7 @@ class AbstractFaultMonitor(object):
             type=ExecutionEvent.MONITOR_EVENT,
             monitor_metadata=MonitorMetadata(
                 fault_status=self.fault_status,
-                context=(pickle.dumps(context) if context is not None else ''),
+                context=pickle.dumps(context),
                 topics=self.topics,
                 services=self.services,
                 actions=self.actions,
