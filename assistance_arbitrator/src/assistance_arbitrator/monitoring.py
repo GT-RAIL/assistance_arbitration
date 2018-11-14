@@ -158,7 +158,7 @@ class AbstractBeliefMonitor(object):
         for belief, value in beliefs.iteritems():
             assert 0 <= value <= 1, "Invalid value for belief, {}: {}".format(belief, value)
 
-            if force or self.beliefs[belief] != value:
+            if force or self.beliefs.get(belief) != value:
                 trace_event = ExecutionEvent(
                     stamp=rospy.Time.now(),
                     name=belief,
