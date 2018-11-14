@@ -2,6 +2,9 @@
 <launch>
   <arg name="sim" default="false" />
 
+  <!-- Launch the point cloud diagnostic -->
+  <node name="point_cloud_diagnostic" pkg="assistance_arbitrator" type="point_cloud_diagnostic.py" />
+
   <!-- Launch each of the detectors -->
   <node name="base_collision_monitor" pkg="assistance_arbitrator" type="base_collision_monitor.py" />
   <node name="base_stall_monitor" pkg="assistance_arbitrator" type="base_stall_monitor.py" />
