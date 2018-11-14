@@ -156,9 +156,10 @@ class AbstractBeliefMonitor(object):
     def update_beliefs(self, beliefs, context=None, force=False):
         """Take in a dictionary of beliefs and update them according to force"""
         for belief, value in beliefs.iteritems():
+            value = float(value)
             assert 0 <= value <= 1, "Invalid value for belief, {}: {}".format(belief, value)
 
-            if force or self.beliefs.get(belief) != value:
+            if force or self.beliefs.get(belief, -1) != value:
                 trace_event = ExecutionEvent(
                     stamp=rospy.Time.now(),
                     name=belief,

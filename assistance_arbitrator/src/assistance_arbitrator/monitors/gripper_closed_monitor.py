@@ -33,11 +33,7 @@ class GripperClosedMonitor(AbstractBeliefMonitor):
         )
 
     def _on_gripper_state(self, msg):
-        if msg.joints[0].position <= GripperClosedMonitor.GRIPPER_CLOSED_VALUE:
-            value = float(True)
-        else:
-            value = float(False)
-
+        value = msg.joints[0].position <= GripperClosedMonitor.GRIPPER_CLOSED_VALUE
         self.update_beliefs({ BeliefKeys.GRIPPER_FULLY_CLOSED: value })
 
 
