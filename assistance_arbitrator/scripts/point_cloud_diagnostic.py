@@ -20,7 +20,7 @@ class PointCloudDiagnostic(object):
     cloud in the last 1 sec"""
 
     POINT_CLOUD_TOPIC = "/head_camera/depth_registered/points"
-    MAX_ALLOWED_DELAY = rospy.Duration(0.5)  # It's OK to not have a point cloud for this long
+    MAX_ALLOWED_DELAY = rospy.Duration(1.5)  # It's OK to not have a point cloud for this long
 
     def __init__(self):
         # Point cloud details
