@@ -23,6 +23,7 @@ from .place import PlaceAction
 from .speak import SpeakAction
 from .toggle_breakers import ToggleBreakersAction
 from .torso import TorsoAction
+from .update_beliefs import UpdateBeliefsAction
 from .verify_grasp import VerifyGraspAction
 from .wait import WaitAction
 
@@ -71,6 +72,7 @@ default_actions_dict = {
     'place': PlaceAction,
     'speak': SpeakAction,
     'toggle_breakers': ToggleBreakersAction,
+    'update_beliefs': UpdateBeliefsAction,
     'verify_grasp': VerifyGraspAction,
     'torso': TorsoAction,
 }

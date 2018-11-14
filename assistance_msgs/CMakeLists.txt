@@ -54,6 +54,8 @@ add_message_files(
   ExecutionEvent.msg
   TaskStepMetadata.msg
   MonitorMetadata.msg
+  BeliefMetadata.msg
+  BeliefKeys.msg
 )
 
 ## Generate services in the 'srv' folder

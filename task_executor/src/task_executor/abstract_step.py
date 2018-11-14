@@ -11,7 +11,11 @@ import pickle
 import rospy
 
 from actionlib_msgs.msg import GoalStatus
-from assistance_msgs.msg import ExecutionEvent, TaskStepMetadata, MonitorMetadata
+from assistance_msgs.msg import (ExecutionEvent, TaskStepMetadata,
+                                 MonitorMetadata, BeliefMetadata, BeliefKeys)
+
+
+# The class definition
 
 class AbstractStep(object):
     """All steps in a task are derived from this class"""
@@ -43,7 +47,7 @@ class AbstractStep(object):
         self._last_event = None  # tuple of (event, context,); suppress duplicates
 
     def _update_task_trace(self, context):
-        # Check to see if this is a trivial update
+        # Check to see if this is a trivial update. If so, ignore
         if (self._last_event is not None
                 and self._last_event[0].task_step_metadata.status == self.status
                 and self._last_event[1] == context):
@@ -149,7 +153,23 @@ class AbstractStep(object):
         """
         return not (self.is_running() or self.is_succeeded() or self.is_preempted())
 
+    def update_beliefs(self, belief_keys, values, context={}):
+        """Updates the event trace with belief updates. Expects lists/tuples"""
+        assert len(belief_keys) == len(values), "Invalid arguments to a belief update"
+        for belief, value in zip(belief_keys, values):
+            event = ExecutionEvent(
+                stamp=rospy.Time.now(),
+                name=belief,
+                type=ExecutionEvent.BELIEF_EVENT,
+                belief_metadata=BeliefMetadata(
+                    value=value,
+                    context=pickle.dumps(context)
+                )
+            )
+            self._trace.publish(event)
+
     def notify_action_send_goal(self, action_server_name, goal):
+        """Updates the event trace when a goal is sent to an action server"""
         self._update_monitor_trace(
             AbstractStep.ACTION_SEND_GOAL_EVENT,
             { 'goal': goal },
@@ -157,6 +177,8 @@ class AbstractStep(object):
         )
 
     def notify_action_recv_result(self, action_server_name, status, result):
+        """Updates the event trace when a result is received from an action
+        server"""
         self._update_monitor_trace(
             AbstractStep.ACTION_RECV_RESULT_EVENT,
             { 'status': status, 'result': result },
@@ -164,6 +186,8 @@ class AbstractStep(object):
         )
 
     def notify_action_cancel(self, action_server_name):
+        """Updates the event trace when a goal sent to an action server is
+        cancelled"""
         self._update_monitor_trace(
             AbstractStep.ACTION_CANCEL_EVENT,
             {},
@@ -171,6 +195,7 @@ class AbstractStep(object):
         )
 
     def notify_service_called(self, service_name, context={}):
+        """Updates the event trace when a service is called"""
         self._update_monitor_trace(
             AbstractStep.SERVICE_CALLED_EVENT,
             context,
@@ -178,6 +203,7 @@ class AbstractStep(object):
         )
 
     def notify_topic_published(self, topic_name, msg):
+        """Updates the event trace when a message is published on a topic"""
         self._update_monitor_trace(
             AbstractStep.TOPIC_PUBLISHED_EVENT,
             { 'msg': msg },
@@ -185,6 +211,7 @@ class AbstractStep(object):
         )
 
     def notify_topic_message(self, topic_name, msg):
+        """Updates the event trace when a message is received on a topic"""
         self._update_monitor_trace(
             AbstractStep.TOPIC_MESSAGE_EVENT,
             { 'msg': msg },
