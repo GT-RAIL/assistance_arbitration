@@ -9,7 +9,7 @@ string CUBE_AT_DROPOFF=cube_at_dropoff
 string TORSO_RAISED=torso_raised
 
 # Beliefs about the gripper
-string GRIPPER_OPEN=gripper_open
+string GRIPPER_FULLY_CLOSED=gripper_fully_closed
 string GRIPPER_HAS_OBJECT=gripper_has_object
 
 # Beliefs about doors

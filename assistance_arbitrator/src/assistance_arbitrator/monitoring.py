@@ -17,7 +17,7 @@ import rospy
 
 from actionlib_msgs.msg import GoalStatus
 from ros_topology_msgs.msg import Connection, Node as NodeMsg, Graph as GraphMsg
-from assistance_msgs.msg import ExecutionEvent, MonitorMetadata
+from assistance_msgs.msg import ExecutionEvent, MonitorMetadata, BeliefMetadata
 
 
 # Helper classes and functions
@@ -132,6 +132,46 @@ class AbstractFaultMonitor(object):
             )
         )
         self._trace.publish(trace_event)
+
+
+class AbstractBeliefMonitor(object):
+    """All asynchronous belief monitors should derive from this class"""
+
+    __metaclass__ = abc.ABCMeta
+
+    def __init__(self):
+        self.beliefs = {}
+
+        # The trace publisher
+        self._trace = rospy.Publisher(
+            TraceMonitor.EXECUTION_TRACE_TOPIC,
+            ExecutionEvent,
+            queue_size=10
+        )
+
+    def flush_beliefs(self, context=None):
+        """Force send ALL beliefs known so far"""
+        self.update_beliefs(self.beliefs, context, force=True)
+
+    def update_beliefs(self, beliefs, context=None, force=False):
+        """Take in a dictionary of beliefs and update them according to force"""
+        for belief, value in beliefs.iteritems():
+            assert 0 <= value <= 1, "Invalid value for belief, {}: {}".format(belief, value)
+
+            if force or self.beliefs[belief] != value:
+                trace_event = ExecutionEvent(
+                    stamp=rospy.Time.now(),
+                    name=belief,
+                    type=ExecutionEvent.BELIEF_EVENT,
+                    belief_metadata=BeliefMetadata(
+                        value=value,
+                        context=pickle.dumps(context)
+                    )
+                )
+                self._trace.publish(trace_event)
+
+            # Cache the belief
+            self.beliefs[belief] = value
 
 
 class TraceMonitor(object):

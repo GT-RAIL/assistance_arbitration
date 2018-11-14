@@ -8,6 +8,7 @@ from .breaker_state_monitor import BreakerStateMonitor
 from .costmap_monitor import CostmapMonitor
 from .diagnostics_monitor import DiagnosticsMonitor
 from .global_plan_monitor import GlobalPlanMonitor
+from .gripper_closed_monitor import GripperClosedMonitor
 from .localization_monitor import LocalizationMonitor
 from .octomap_monitor import OctomapMonitor
 from .wifi_monitor import WifiMonitor
