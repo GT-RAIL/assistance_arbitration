@@ -31,7 +31,7 @@ class PointCloudDiagnostic(object):
         # Create the diagnostic updater
         self._updater = diagnostic_updater.Updater()
         self._updater.setHardwareID("none")
-        self._updater.add("point_cloud", self._create_diagnostic)
+        self._updater.add("delay", self._create_diagnostic)
 
         # Set the loop rate of this updater (Hz)
         self._loop_rate = 20
