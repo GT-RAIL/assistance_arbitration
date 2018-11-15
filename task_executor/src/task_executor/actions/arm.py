@@ -15,8 +15,8 @@ from actionlib_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped
 from moveit_msgs.msg import MoveItErrorCodes
 from fetch_grasp_suggestion.msg import PresetJointsMoveAction, PresetJointsMoveGoal
-from task_executor.msg import ArmJointPose
-from task_executor.srv import GetArmGripperPose, GetArmJointPose, GetTrajectory
+from assistance_msgs.msg import ArmJointPose
+from assistance_msgs.srv import GetArmGripperPose, GetArmJointPose, GetTrajectory
 
 from .look_at_gripper import LookAtGripperAction
 

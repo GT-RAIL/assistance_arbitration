@@ -14,7 +14,7 @@ from task_executor.actions import get_default_actions
 from task_executor.tasks import Task, TaskContext
 
 from actionlib_msgs.msg import GoalID, GoalStatus
-from task_executor.msg import ExecuteAction
+from assistance_msgs.msg import ExecuteAction
 from assistance_msgs.msg import (RequestAssistanceAction, RequestAssistanceGoal,
                                  RequestAssistanceResult)
 from std_srvs.srv import Trigger, TriggerResponse

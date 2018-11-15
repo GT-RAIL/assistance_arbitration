@@ -12,7 +12,7 @@ from std_srvs.srv import Empty
 from rail_manipulation_msgs.msg import SegmentedObjectList
 from rail_manipulation_msgs.srv import SegmentObjects
 from fetch_grasp_suggestion.srv import AddObject, AddObjectRequest
-from task_executor.srv import GetObjectConstraints
+from assistance_msgs.srv import GetObjectConstraints
 
 
 class FindObjectAction(AbstractStep):

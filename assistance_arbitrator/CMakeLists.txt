@@ -17,7 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
   power_msgs
   ros_topology_msgs
   rospy
-  task_executor
 )
 
 ## System dependencies are found with CMake's conventions

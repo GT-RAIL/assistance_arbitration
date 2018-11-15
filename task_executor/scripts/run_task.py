@@ -10,7 +10,7 @@ import rospy
 import actionlib
 
 from actionlib_msgs.msg import GoalStatus
-from task_executor.msg import ExecuteAction, ExecuteGoal
+from assistance_msgs.msg import ExecuteAction, ExecuteGoal
 
 
 def goal_status_from_code(status):

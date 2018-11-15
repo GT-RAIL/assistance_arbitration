@@ -11,7 +11,7 @@ import actionlib
 from task_executor.abstract_step import AbstractStep
 
 from actionlib_msgs.msg import GoalStatus
-from task_executor.msg import ExecuteAction, ExecuteGoal
+from assistance_msgs.msg import ExecuteAction, ExecuteGoal
 
 
 # Helpers

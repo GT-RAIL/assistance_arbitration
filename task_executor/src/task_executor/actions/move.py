@@ -12,8 +12,8 @@ from task_executor.abstract_step import AbstractStep
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib_msgs.msg import GoalStatus
-from task_executor.msg import Waypoint
-from task_executor.srv import GetWaypoints
+from assistance_msgs.msg import Waypoint
+from assistance_msgs.srv import GetWaypoints
 
 
 class MoveAction(AbstractStep):

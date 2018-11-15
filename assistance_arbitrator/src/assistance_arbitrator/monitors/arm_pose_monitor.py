@@ -8,9 +8,8 @@ import numpy as np
 import rospy
 
 from sensor_msgs.msg import JointState
-from assistance_msgs.msg import BeliefKeys
-from task_executor.msg import ArmJointPose
-from task_executor.srv import GetArmJointPose
+from assistance_msgs.msg import BeliefKeys, ArmJointPose
+from assistance_msgs.srv import GetArmJointPose
 
 from assistance_arbitrator.monitoring import AbstractBeliefMonitor
 

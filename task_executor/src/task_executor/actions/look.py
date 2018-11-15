@@ -8,7 +8,7 @@ from task_executor.abstract_step import AbstractStep
 
 from control_msgs.msg import PointHeadAction, PointHeadGoal
 from actionlib_msgs.msg import GoalStatus
-from task_executor.srv import GetArmGripperPose
+from assistance_msgs.srv import GetArmGripperPose
 
 
 class LookAction(AbstractStep):

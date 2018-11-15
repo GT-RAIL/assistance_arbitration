@@ -66,9 +66,7 @@
   <depend>std_srvs</depend>
   <depend>trajectory_msgs</depend>
 
-  <build_depend>message_generation</build_depend>
   <exec_depend>hlpr_speech_recognition</exec_depend>
-  <exec_depend>message_runtime</exec_depend>
   <exec_depend>simulation_helpers</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->

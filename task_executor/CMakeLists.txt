@@ -15,7 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
   fetch_grasp_suggestion
   geometry_msgs
   hlpr_speech_msgs
-  message_generation
   move_base_msgs
   rail_manipulation_msgs
   rospy
@@ -60,37 +59,37 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  Waypoint.msg
-  ObjectConstraints.msg
-  Bounds.msg
-  ArmJointPose.msg
-)
+# add_message_files(
+#   FILES
+#   Waypoint.msg
+#   ObjectConstraints.msg
+#   Bounds.msg
+#   ArmJointPose.msg
+# )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  GetWaypoints.srv
-  GetObjectConstraints.srv
-  GetArmGripperPose.srv
-  GetArmJointPose.srv
-  GetTrajectory.srv
-)
+# add_service_files(
+#   FILES
+#   GetWaypoints.srv
+#   GetObjectConstraints.srv
+#   GetArmGripperPose.srv
+#   GetArmJointPose.srv
+#   GetTrajectory.srv
+# )
 
 ## Generate actions in the 'action' folder
-add_action_files(
-  FILES
-  Execute.action
-)
+# add_action_files(
+#   FILES
+#   Execute.action
+# )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-    actionlib_msgs
-    geometry_msgs
-    std_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#     actionlib_msgs
+#     geometry_msgs
+#     std_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -125,7 +124,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES task_executor
 #  CATKIN_DEPENDS actionlib geometry_msgs rospy
-  DEPENDS message_runtime
+#  DEPENDS message_runtime
 )
 
 ###########
