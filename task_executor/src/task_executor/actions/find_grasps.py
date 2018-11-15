@@ -44,7 +44,7 @@ class FindGraspsAction(AbstractStep):
 
     def run(self, segmented_obj):
         rospy.loginfo("Action {}: Calculating grasps on object at: {}"
-                      .format(self.name, segmented_obj.center))
+                      .format(self.name, str(segmented_obj.center).replace("\n", ", ")))
         self._stopped = False
 
         # Given the segmentation and the objects, now ask for grasps

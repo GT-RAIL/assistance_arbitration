@@ -1,5 +1,5 @@
 tasks:
-  # Setup for the main task
+  # Setup for the main tasks
   setup:
     steps:
     - action: torso
@@ -21,7 +21,6 @@ tasks:
           DOOR_1_OPEN: true
           DOOR_2_OPEN: true
           GRIPPER_HAS_OBJECT: false
-          CUBE_AT_PICKUP_1: true
 
     - action: torso
       params:
@@ -163,6 +162,7 @@ tasks:
       params:
         beliefs:
           CUBE_AT_PICKUP_1: false
+          CUBE_AT_PICKUP_2: false
 
   # Go through a door
   traverse_doorway:
@@ -220,23 +220,8 @@ tasks:
           GRIPPER_HAS_OBJECT: false
           CUBE_AT_DROPOFF: true
 
-  # Task used for testing subsets of the main task
-  test:
-    steps:
-    - action: arm
-      params:
-        poses: joint_poses.tuck
-
-    - action: torso
-      params:
-        height: 0.0
-
-    - action: move
-      params:
-        location: locations.pre_table1
-
-  # The main fetch and deliver task that we want to make robust
-  main:
+  # The alternate, easy, fetch and deliver task that we want to make robust
+  easy:
     steps:
     - action: beep
       params:
@@ -244,6 +229,13 @@ tasks:
         async: true
 
     - task: setup
+
+    # Simulate some reasoning that leads us to believe the object of interest is
+    # at location 1
+    - action: update_beliefs
+      params:
+        beliefs:
+          CUBE_AT_PICKUP_1: true
 
     - action: beep
       params:
@@ -260,16 +252,12 @@ tasks:
         beep: surprised
         async: true
 
-    - action: look
-      params:
-        pose: gripper_poses.object_look_location
-
-    - action: find_object
+    - task: perceive
       params:
         obj: objects.cube
       var:
-      - found_idx
-      - found_obj
+      - cube_idx
+      - grasps
 
     - action: beep
       params:
@@ -297,6 +285,122 @@ tasks:
       params:
         beep: excited
         async: true
+
+    - task: traverse_doorway
+      params:
+        pre_loc: locations.door1_out_facing_in
+        post_loc: locations.door1_in_facing_in
+        door_belief: DOOR_1_OPEN
+      var:
+      - obstacle_in_front
+
+    - task: approach
+      params:
+        pre_loc: locations.pre_shelf
+        loc: locations.shelf
+
+    - action: beep
+      params:
+        beep: unsure
+        async: true
+
+    - task: place
+
+    - action: beep
+      params:
+        beep: proud
+        async: true
+
+    - task: depart
+      params:
+        loc: locations.shelf
+        post_loc: locations.post_shelf
+
+    - action: beep
+      params:
+        beep: happy
+
+  # The alternate, hard, fetch and deliver task that we also want to make robust
+  hard:
+    steps:
+    - action: beep
+      params:
+        beep: cheerful
+        async: true
+
+    - task: setup
+
+    # Simulate some reasoning that leads us to believe the object of interest is
+    # at location 2
+    - action: update_beliefs
+      params:
+        beliefs:
+          CUBE_AT_PICKUP_2: true
+
+    - action: beep
+      params:
+        beep: playful
+        async: true
+
+    - task: traverse_doorway
+      params:
+        pre_loc: locations.door2_out_facing_in
+        post_loc: locations.door2_in_facing_in
+        door_belief: DOOR_2_OPEN
+      var:
+      - obstacle_in_front
+
+    - task: approach
+      params:
+        pre_loc: locations.pre_table2
+        loc: locations.table2
+
+    - action: beep
+      params:
+        beep: surprised
+        async: true
+
+    - task: perceive
+      params:
+        obj: objects.cube
+      var:
+      - cube_idx
+      - grasps
+
+    - action: beep
+      params:
+        beep: unsure
+        async: true
+
+    - task: pick
+      params:
+        cube_idx: var.cube_idx
+        grasps: var.grasps
+      var:
+      - grasped
+
+    - action: beep
+      params:
+        beep: happy
+        async: true
+
+    - task: depart
+      params:
+        loc: locations.table2
+        post_loc: locations.post_table2
+
+    - action: beep
+      params:
+        beep: excited
+        async: true
+
+    - task: traverse_doorway
+      params:
+        pre_loc: locations.door2_in_facing_out
+        post_loc: locations.door2_out_facing_out
+        door_belief: DOOR_2_OPEN
+      var:
+      - obstacle_in_front
 
     - task: traverse_doorway
       params:
