@@ -7,11 +7,11 @@ waypoints:
   - {x: 2.250, y: 3.118, theta: 3.14, frame: "map"}
 
   pre_table2:
-  - {x: -3.53, y: 3.65, theta: 1.57, frame: "map"}
+  - {x: -4.85, y: -4.0, theta: 0, frame: "map"}
   table2:
-  - {x: -3.53, y: 4.15, theta: 1.57, frame: "map"}
+  - {x: -4.35, y: -4.0, theta: 0, frame: "map"}
   post_table2:
-  - {x: -3.53, y: 3.65, theta: -1.57, frame: "map"}
+  - {x: -4.85, y: -4.0, theta: 3.14, frame: "map"}
 
   pre_shelf:
   - {x: -4.65, y: 2.92, theta: 3.14, frame: "map"}
