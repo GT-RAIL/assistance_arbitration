@@ -5,12 +5,38 @@ waypoints:
   - {x: 2.750, y: 3.118, theta: 0, frame: "map"}
   post_table1:
   - {x: 2.250, y: 3.118, theta: 3.14, frame: "map"}
+
   pre_table2:
   - {x: -3.53, y: 3.65, theta: 1.57, frame: "map"}
   table2:
   - {x: -3.53, y: 4.15, theta: 1.57, frame: "map"}
   post_table2:
   - {x: -3.53, y: 3.65, theta: -1.57, frame: "map"}
+
+  pre_shelf:
+  - {x: -5.15, y: 2.92, theta: 3.14, frame: "map"}
+  shelf:
+  - {x: -4.65, y: 2.92, theta: 3.14, frame: "map"}
+  post_shelf:
+  - {x: -4.65, y: 2.92, theta: 0, frame: "map"}
+
+  door1_out_facing_in:
+  - {x: -0.04, y: 2.22, theta: 3.14, frame: "map"}
+  door1_out_facing_out:
+  - {x: -0.04, y: 2.22, theta: 0, frame: "map"}
+  door1_in_facing_in:
+  - {x: -1.76, y: 2.22, theta: 3.14, frame: "map"}
+  door1_in_facing_out:
+  - {x: -1.76, y: 2.22, theta: 0, frame: "map"}
+
+  door2_out_facing_in:
+  - {x: -5.37, y: -0.14, theta: -1.57, frame: "map"}
+  door2_out_facing_out:
+  - {x: -5.37, y: -0.14, theta: 1.57, frame: "map"}
+  door2_in_facing_in:
+  - {x: -5.37, y: -1.86, theta: -1.57, frame: "map"}
+  door2_in_facing_out:
+  - {x: -5.37, y: -1.86, theta: 1.57, frame: "map"}
 
 object_constraints:
   cube:
