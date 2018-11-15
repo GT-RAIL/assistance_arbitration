@@ -3,6 +3,9 @@
   <arg name="sim" default="false" />
   <arg name="debug" default="false" />
 
+  <!-- Arg to start the datalogger -->
+  <arg name="datalogger" default="false" />
+
   <!-- Args to start different capabilities -->
   <arg name="start_all" default="false" />
   <arg name="navigation" default="$(arg start_all)" />
@@ -91,6 +94,9 @@
       <arg name="speech_gui" value="$(arg speech_gui)" />
     </include>
   </group>
+
+  <!-- Data Logger -->
+  <node name="datalogger" pkg="assistance_arbitrator" type="datalogger_node.py" output="screen" if="$(arg datalogger)" />
 
   <!-- Local recovery strategy -->
   <include file="$(find local_strategy)/launch/recovery_strategy.launch" if="$(arg local_strategy)">
