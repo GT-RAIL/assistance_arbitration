@@ -153,10 +153,11 @@ class AbstractStep(object):
         """
         return not (self.is_running() or self.is_succeeded() or self.is_preempted())
 
-    def update_beliefs(self, belief_keys, values, context={}):
+    def update_beliefs(self, beliefs, context={}):
         """Updates the event trace with belief updates. Expects lists/tuples"""
-        assert len(belief_keys) == len(values), "Invalid arguments to a belief update"
-        for belief, value in zip(belief_keys, values):
+        for belief, value in beliefs.iteritems():
+            value = float(value)
+            assert 0 <= value <= 1, "Invalid value for belief, {}: {}".format(belief, value)
             event = ExecutionEvent(
                 stamp=rospy.Time.now(),
                 name=belief,

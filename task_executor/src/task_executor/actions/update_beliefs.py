@@ -25,10 +25,10 @@ class UpdateBeliefsAction(AbstractStep):
         # Lookup the belief keys as needed
         disambiguated_beliefs = {}
         for belief, value in beliefs.iteritems():
-            disambiguated_beliefs[getattr(BeliefKeys, belief, belief)] = float(value)
+            disambiguated_beliefs[getattr(BeliefKeys, belief, belief)] = value
 
         # Update the beliefs
-        self.update_beliefs(*zip(*disambiguated_beliefs.iteritems()))
+        self.update_beliefs(disambiguated_beliefs)
 
         # Set the result to succeeded
         yield self.set_succeeded()

@@ -8,6 +8,7 @@ from task_executor.abstract_step import AbstractStep
 from .arm import ArmAction
 from .background_task import BackgroundTaskAction
 from .beep import BeepAction
+from .check_obstacle_in_front import CheckObstacleInFrontAction
 from .find_closest_person import FindClosestPersonAction
 from .find_grasps import FindGraspsAction
 from .find_object import FindObjectAction
@@ -58,6 +59,7 @@ default_actions_dict = {
     'arm': ArmAction,
     'background_task': BackgroundTaskAction,
     'beep': BeepAction,
+    'check_obstacle_in_front': CheckObstacleInFrontAction,
     'find_closest_person': FindClosestPersonAction,
     'find_grasps': FindGraspsAction,
     'find_object': FindObjectAction,
