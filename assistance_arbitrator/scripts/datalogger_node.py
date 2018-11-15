@@ -37,7 +37,7 @@ class DataLogger(object):
         'rosbag', 'record',
         '--duration=10m',  # Automatically split every 10m
         '--split',
-        '-o', 'halloween',
+        '-o', 'fetch-deliver',
         '-b', "0",
         '--chunksize=1024',
         '--lz4',

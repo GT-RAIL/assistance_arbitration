@@ -9,15 +9,16 @@ include_regex:
 - /execution_monitor/trace
 
 - /joy
+- /teleop/cmd_vel
 - "/cmd_vel(.*)"
 - /robot_state
+- /gripper_state
 - "/tf(.*)"
 - /joint_states
 - /odom
 
 - "/arm_controller/follow_joint_trajectory/(.*)"
 - "/gripper_controller/(.*)"
-- /gripper_state
 - "/head_controller/(follow_joint_trajectory|point_head)/(.*)"
 - "/torso_controller/follow_joint_trajectory/(.*)"
 
@@ -28,11 +29,22 @@ include_regex:
 - "/task_executor/(.*)"
 
 - "/sound_server/(.*)"
+- "/hlpr_speech_commands"
 
 - /move_base/(cancel|feedback|goal|result|status)
 
+- /rail_segmentation/segmented_objects
+- /rail_segmentation/segmented_table
+- "/rail_agile/sample_grasps/(.*)"
+- "/grasp_sampler/rank_grasps_object/(.*)"
+- /suggester/grasps
+- /suggester/grasp_feedback
+
+- /rail_people_detector/closest_person
+
 - "/grasp_executor/preset_position/(.*)"
 - "/grasp_executor/execute_grasp/(.*)"
+- "/execute_trajectory/(.*)"
 - /move_group/(cancel|feedback|goal|result|status|monitored_planning_scene|motion_plan_request)
 - /planning_scene
 - /planning_scene_world
