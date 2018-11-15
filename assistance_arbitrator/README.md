@@ -12,3 +12,16 @@ There are two strategies:
 
 - Probably should have used the diagnostics topic from the start to keep a trace of the program execution. Too late to start now.
 - Instead, make sure to bag the trace topic and the diagnostics topic; we'll use both to create a complete trace of execution post-facto.
+
+### Data Collection
+
+When running data collection in simulation, run (from the Workspace):
+
+```bash
+roslaunch fetch_gazebo playground.launch
+roslaunch task_executor fetch_deliver.launch sim:=true start_all:=true task_executor:=false datalogger:=true
+rosrun rviz rviz -d fetch.rviz
+rosservice call /datalogger/start
+roslaunch task_executor fetch_deliver.launch sim:=true task_executor:=true local_strategy:=false
+rosrun task_executor run_task.py <task_def>
+```

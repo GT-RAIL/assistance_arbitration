@@ -9,6 +9,7 @@ from .arm import ArmAction
 from .background_task import BackgroundTaskAction
 from .beep import BeepAction
 from .check_obstacle_in_front import CheckObstacleInFrontAction
+from .detach_objects import DetachObjectsAction
 from .find_closest_person import FindClosestPersonAction
 from .find_grasps import FindGraspsAction
 from .find_object import FindObjectAction
@@ -60,6 +61,7 @@ default_actions_dict = {
     'background_task': BackgroundTaskAction,
     'beep': BeepAction,
     'check_obstacle_in_front': CheckObstacleInFrontAction,
+    'detach_objects': DetachObjectsAction,
     'find_closest_person': FindClosestPersonAction,
     'find_grasps': FindGraspsAction,
     'find_object': FindObjectAction,
@@ -74,9 +76,10 @@ default_actions_dict = {
     'place': PlaceAction,
     'speak': SpeakAction,
     'toggle_breakers': ToggleBreakersAction,
+    'torso': TorsoAction,
     'update_beliefs': UpdateBeliefsAction,
     'verify_grasp': VerifyGraspAction,
-    'torso': TorsoAction,
+    'wait': WaitAction,
 }
 
 def get_default_actions():

@@ -6,59 +6,54 @@ tasks:
       params:
         height: 0.4
 
-    - action: gripper
-      params:
-        command: open
-
-    - action: arm
+    - task: reset_arm
       params:
         poses: joint_poses.tuck
-        look_at_gripper: true
 
     - action: update_beliefs
       params:
         beliefs:
           DOOR_1_OPEN: true
           DOOR_2_OPEN: true
-          GRIPPER_HAS_OBJECT: false
 
     - action: torso
       params:
         height: 0.0
 
-  # Perception is a task comprising of the find_objects and find_grasps subtasks
-  perceive:
+  # Reset the arm by removing all attached objects and clearing the scene. Then
+  # move the arm through the specified poses. If none are specified, then don't
+  # move
+  reset_arm:
     params:
-    - obj
-
-    var:
-    - cube_idx
-    - grasps
+    - poses
 
     steps:
-    - action: look
+    - action: gripper
       params:
-        pose: gripper_poses.object_look_location
+        command: open
 
-    - action: find_object
-      params:
-        obj: params.obj
-      var:
-      - found_idx
-      - found_obj
+    - action: detach_objects
 
-    - action: find_grasps
+    - action: update_beliefs
       params:
-        segmented_obj: var.found_obj
-      var:
-      - grasps
+        beliefs:
+          GRIPPER_HAS_OBJECT: false
 
-    - op: assign
+    - op: make_boolean
       params:
-        var_name: cube_idx
-        value: var.found_idx
+        var_name: poses
+        bool_name: poses_exist
       var:
-      - cube_idx
+      - poses_exist
+
+    - choice: move_to_poses
+      params:
+        condition: var.poses_exist
+        if_true:
+          action: arm
+          params:
+            poses: params.poses
+            look_at_gripper: true
 
   # Approaching a pickup or dropoff location
   approach:
@@ -137,33 +132,6 @@ tasks:
       params:
         height: 0.0
 
-  # Pick up a recognized cube given its grasps
-  pick:
-    params:
-    - cube_idx
-    - grasps
-
-    var:
-    - grasped
-
-    steps:
-    - action: pick
-      params:
-        cube_idx: params.cube_idx
-        grasps: params.grasps
-
-    - action: verify_grasp
-      params:
-        abort_on_false: true
-      var:
-      - grasped
-
-    - action: update_beliefs
-      params:
-        beliefs:
-          CUBE_AT_PICKUP_1: false
-          CUBE_AT_PICKUP_2: false
-
   # Go through a door
   traverse_doorway:
     params:
@@ -189,6 +157,116 @@ tasks:
     - action: move
       params:
         location: params.post_loc
+
+  # Perception is a task comprising of the find_objects and find_grasps subtasks
+  perceive:
+    params:
+    - obj
+
+    var:
+    - cube_idx
+    - grasps
+
+    steps:
+    - action: look
+      params:
+        pose: gripper_poses.object_look_location
+
+    # Need a wait here so that the segmentation node can update its cached point
+    # cloud. Otherwise we get loads of misaligned segmentations
+    - action: wait
+      params:
+        duration: 1.0
+
+    - action: find_object
+      params:
+        obj: params.obj
+      var:
+      - found_idx
+      - found_obj
+
+    - action: find_grasps
+      params:
+        segmented_obj: var.found_obj
+      var:
+      - grasps
+
+    - op: assign
+      params:
+        var_name: cube_idx
+        value: var.found_idx
+      var:
+      - cube_idx
+
+  # Pick up a recognized cube given its grasps
+  pick:
+    params:
+    - cube_idx
+    - grasps
+    - abort_on_false
+
+    var:
+    - grasped
+
+    steps:
+    - action: pick
+      params:
+        cube_idx: params.cube_idx
+        grasps: params.grasps
+
+    # This action updates the belief for the gripper having the object
+    - action: verify_grasp
+      params:
+        abort_on_false: params.abort_on_false
+      var:
+      - grasped
+
+    - choice: update_beliefs
+      params:
+        condition: var.grasped
+        if_true:
+          action: update_beliefs
+          params:
+            beliefs:
+              CUBE_AT_PICKUP_1: false
+              CUBE_AT_PICKUP_2: false
+
+  # Find and pickup the cube
+  perceive_and_pick:
+    params:
+    - obj
+    - abort_on_false
+    - reset_arm
+
+    var:
+    - grasped
+
+    steps:
+    # Reset the arm if needed
+    - choice: reset_arm
+      params:
+        condition: params.reset_arm
+        if_true:
+          task: reset_arm
+          params:
+            poses: joint_poses.ready
+
+    # First search for the object
+    - task: perceive
+      params:
+        obj: params.obj
+      var:
+      - cube_idx
+      - grasps
+
+    # Then send the result to pick
+    - task: pick
+      params:
+        cube_idx: var.cube_idx
+        grasps: var.grasps
+        abort_on_false: params.abort_on_false
+      var:
+      - grasped
 
   # Place the cube at the desired location
   place:
@@ -252,24 +330,25 @@ tasks:
         beep: surprised
         async: true
 
-    - task: perceive
+    - task: perceive_and_pick
       params:
         obj: objects.cube
-      var:
-      - cube_idx
-      - grasps
-
-    - action: beep
-      params:
-        beep: unsure
-        async: true
-
-    - task: pick
-      params:
-        cube_idx: var.cube_idx
-        grasps: var.grasps
+        abort_on_false: false
+        reset_arm: false
       var:
       - grasped
+
+    - choice: try_pick_again
+      params:
+        condition: var.grasped
+        if_false:
+          task: perceive_and_pick
+          params:
+            obj: objects.cube
+            abort_on_false: true
+            reset_arm: true
+          var:
+          - grasped
 
     - action: beep
       params:
@@ -360,24 +439,25 @@ tasks:
         beep: surprised
         async: true
 
-    - task: perceive
+    - task: perceive_and_pick
       params:
         obj: objects.cube
-      var:
-      - cube_idx
-      - grasps
-
-    - action: beep
-      params:
-        beep: unsure
-        async: true
-
-    - task: pick
-      params:
-        cube_idx: var.cube_idx
-        grasps: var.grasps
+        abort_on_false: false
+        reset_arm: false
       var:
       - grasped
+
+    - choice: try_pick_again
+      params:
+        condition: var.grasped
+        if_false:
+          task: perceive_and_pick
+          params:
+            obj: objects.cube
+            abort_on_false: true
+            reset_arm: true
+          var:
+          - grasped
 
     - action: beep
       params:

@@ -54,7 +54,7 @@ def make_boolean(var_name, bool_name, current_params, current_variables):
         A dictionary with the { bool_name: bool(var_name) }
     """
     heap = _get_heap_for_var_name(var_name, current_variables, current_params)
-    return { bool_name: bool(current_variables[var_name]) }
+    return { bool_name: bool(heap[var_name]) }
 
 def negate(var_name, negate_name, current_params, current_variables):
     """
