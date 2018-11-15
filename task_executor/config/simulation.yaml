@@ -14,9 +14,9 @@ waypoints:
   - {x: -3.53, y: 3.65, theta: -1.57, frame: "map"}
 
   pre_shelf:
-  - {x: -5.15, y: 2.92, theta: 3.14, frame: "map"}
-  shelf:
   - {x: -4.65, y: 2.92, theta: 3.14, frame: "map"}
+  shelf:
+  - {x: -5.15, y: 2.92, theta: 3.14, frame: "map"}
   post_shelf:
   - {x: -4.65, y: 2.92, theta: 0, frame: "map"}
 
@@ -44,6 +44,10 @@ object_constraints:
     location: { xmin: -.inf, xmax: .inf, ymin: -.inf, ymax: .inf, zmin: 0.5, zmax: .inf }
 
 arm_gripper_poses:
+  object_look_location:
+    frame: "base_link"
+    position: { x: 1.5, y: 0.0, z: -1.0 }
+    orientation: { x: 0, y: 0, z: 0, w: 1.0 }
   drop:
     frame: "base_link"
     position: { x: 0.7, y: 0.0, z: 1.0 }

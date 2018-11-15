@@ -67,7 +67,7 @@ class LocalRecoveryServer(object):
         self.actions.beep(beep=SoundClient.BEEP_SAD, async=True)
 
         # First we look for a person.
-        for variables in self.actions.find_closest_person.run(max_duration=0.0):
+        for variables in self.actions.find_closest_person.run(timeout=0.0):
             if self._server.is_preempt_requested() or not self._server.is_active():
                 self.actions.find_closest_person.stop()
 

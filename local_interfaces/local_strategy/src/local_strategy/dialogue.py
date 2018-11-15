@@ -112,14 +112,14 @@ action", "Retry previous action", "Restart Task", and "Stop Executing"
         # Idle behaviours. These are normally always available, however, they
         # can be locked out during interactions
         self._listen_behaviour_lock = Lock()
-        self._idle_behaviour_thread = Thread(target=self.run_idle_behaviours)
+        # self._idle_behaviour_thread = Thread(target=self.run_idle_behaviours)
 
     def start(self):
         # Initialize the actions
         self.actions.init()
 
         # Start the idle behaviours
-        self._idle_behaviour_thread.start()
+        # self._idle_behaviour_thread.start()
 
     def reset_dialogue(self):
         # Stop any actions that we might have started

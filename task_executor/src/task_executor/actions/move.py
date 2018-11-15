@@ -46,8 +46,8 @@ class MoveAction(AbstractStep):
 
         status = GoalStatus.LOST
         for coord_num, coord in enumerate(coords):
-            rospy.loginfo("Action {}: Going to {}/{}. Coordinate: {}"
-                          .format(self.name, coord_num + 1, len(coords), coord))
+            rospy.loginfo("Action {}: Going to {}/{}. Coordinate: {{ {} }}"
+                          .format(self.name, coord_num + 1, len(coords), str(coord).replace("\n", ", ")))
 
             # Create and send the goal
             goal = MoveBaseGoal()

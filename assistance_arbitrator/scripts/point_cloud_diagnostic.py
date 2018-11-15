@@ -38,12 +38,13 @@ class PointCloudDiagnostic(object):
 
     def _create_diagnostic(self, stat):
         with self._pc_lock:
-            if rospy.Time.now() - self._last_pc_header.stamp <= PointCloudDiagnostic.MAX_ALLOWED_DELAY:
+            if self._last_pc_header is not None \
+                    and rospy.Time.now() - self._last_pc_header.stamp <= PointCloudDiagnostic.MAX_ALLOWED_DELAY:
                 status = DiagnosticStatus.OK
-                message = "Delay within acceptable bounds"
+                message = "Point cloud delay is acceptable"
             else:
                 status = DiagnosticStatus.ERROR
-                message = "Delay in point cloud is unacceptable"
+                message = "Point cloud is delayed"
 
         stat.summary(status, message)
         return stat

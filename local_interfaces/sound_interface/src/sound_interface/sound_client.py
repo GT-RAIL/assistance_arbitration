@@ -231,8 +231,8 @@ class SoundClient(object):
         query_dict = {
             'INPUT_TEXT': text,
             'INPUT_TYPE': 'SSML',
-            'LOCALE': 'en_US',
-            'VOICE': 'cmu-rms',
+            'LOCALE': 'en_GB',
+            'VOICE': 'dfki-prudence-hsmm',
             'OUTPUT_TYPE': 'AUDIO',
             'AUDIO': 'WAVE',
             # 'effect_Robot_selected': 'on',

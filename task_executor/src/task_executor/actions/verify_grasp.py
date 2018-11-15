@@ -29,7 +29,7 @@ class VerifyGraspAction(AbstractStep):
         self._in_simulation = rospy.get_param(VerifyGraspAction.SIMULATION_PARAMETER, False)
 
     def run(self, abort_on_false=False):
-        rospy.loginfo("Action {}: Verifying grasp.")
+        rospy.loginfo("Action {}: Verifying grasp".format(self.name))
 
         # Set a stopped flag and then wait for a message
         self._stopped = False

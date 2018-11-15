@@ -1,4 +1,32 @@
 tasks:
+  # Setup for the main task
+  setup:
+    steps:
+    - action: torso
+      params:
+        height: 0.4
+
+    - action: gripper
+      params:
+        command: open
+
+    - action: arm
+      params:
+        poses: joint_poses.tuck
+        look_at_gripper: true
+
+    - action: update_beliefs
+      params:
+        beliefs:
+          DOOR_1_OPEN: true
+          DOOR_2_OPEN: true
+          GRIPPER_HAS_OBJECT: false
+          CUBE_AT_PICKUP_1: true
+
+    - action: torso
+      params:
+        height: 0.0
+
   # Perception is a task comprising of the find_objects and find_grasps subtasks
   perceive:
     params:
@@ -11,7 +39,7 @@ tasks:
     steps:
     - action: look
       params:
-        pose: {x: 1.5, y: 0.0, z: -1.0, frame: "base_link"}
+        pose: gripper_poses.object_look_location
 
     - action: find_object
       params:
@@ -110,6 +138,88 @@ tasks:
       params:
         height: 0.0
 
+  # Pick up a recognized cube given its grasps
+  pick:
+    params:
+    - cube_idx
+    - grasps
+
+    var:
+    - grasped
+
+    steps:
+    - action: pick
+      params:
+        cube_idx: params.cube_idx
+        grasps: params.grasps
+
+    - action: verify_grasp
+      params:
+        abort_on_false: true
+      var:
+      - grasped
+
+    - action: update_beliefs
+      params:
+        beliefs:
+          CUBE_AT_PICKUP_1: false
+
+  # Go through a door
+  traverse_doorway:
+    params:
+    - pre_loc
+    - post_loc
+    - door_belief
+
+    var:
+    - obstacle_in_front
+
+    steps:
+    - action: move
+      params:
+        location: params.pre_loc
+
+    - action: check_obstacle_in_front
+      params:
+        belief: params.door_belief
+        abort_on_true: true
+      var:
+      - obstacle_in_front
+
+    - action: move
+      params:
+        location: params.post_loc
+
+  # Place the cube at the desired location
+  place:
+    steps:
+    - action: look
+      params:
+        pose: gripper_poses.object_look_location
+
+    - action: place
+
+    - action: arm
+      params:
+        poses: joint_poses.ready
+
+    - action: look
+      params:
+        pose: gripper_poses.object_look_location
+
+    - action: find_object
+      params:
+        obj: objects.cube
+      var:
+      - found_idx
+      - found_obj
+
+    - action: update_beliefs
+      params:
+        beliefs:
+          GRIPPER_HAS_OBJECT: false
+          CUBE_AT_DROPOFF: true
+
   # Task used for testing subsets of the main task
   test:
     steps:
@@ -133,18 +243,7 @@ tasks:
         beep: cheerful
         async: true
 
-    - action: torso
-      params:
-        height: 0.4
-
-    - action: arm
-      params:
-        poses: joint_poses.tuck
-        look_at_gripper: true
-
-    - action: torso
-      params:
-        height: 0.0
+    - task: setup
 
     - action: beep
       params:
@@ -161,22 +260,28 @@ tasks:
         beep: surprised
         async: true
 
-    - task: perceive
+    - action: look
+      params:
+        pose: gripper_poses.object_look_location
+
+    - action: find_object
       params:
         obj: objects.cube
       var:
-      - cube_idx
-      - grasps
+      - found_idx
+      - found_obj
 
     - action: beep
       params:
         beep: unsure
         async: true
 
-    - action: pick
+    - task: pick
       params:
         cube_idx: var.cube_idx
         grasps: var.grasps
+      var:
+      - grasped
 
     - action: beep
       params:
@@ -193,21 +298,25 @@ tasks:
         beep: excited
         async: true
 
+    - task: traverse_doorway
+      params:
+        pre_loc: locations.door1_out_facing_in
+        post_loc: locations.door1_in_facing_in
+        door_belief: DOOR_1_OPEN
+      var:
+      - obstacle_in_front
+
     - task: approach
       params:
-        pre_loc: locations.pre_table2
-        loc: locations.table2
-
-    - action: look
-      params:
-        pose: {x: 1.5, y: 0.0, z: -1.0, frame: "base_link"}
+        pre_loc: locations.pre_shelf
+        loc: locations.shelf
 
     - action: beep
       params:
         beep: unsure
         async: true
 
-    - action: place
+    - task: place
 
     - action: beep
       params:
@@ -216,8 +325,8 @@ tasks:
 
     - task: depart
       params:
-        loc: locations.table2
-        post_loc: locations.post_table2
+        loc: locations.shelf
+        post_loc: locations.post_shelf
 
     - action: beep
       params:
