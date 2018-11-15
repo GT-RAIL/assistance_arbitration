@@ -26,7 +26,7 @@ class AbstractStep(object):
     RUNNING_GOAL_STATES = [GoalStatus.PENDING, GoalStatus.ACTIVE, GoalStatus.RECALLING, GoalStatus.PREEMPTING]
 
     # The execution trace topic
-    EXECUTION_TRACE_TOPIC = 'execution_monitor/trace'
+    EXECUTION_TRACE_TOPIC = '/execution_monitor/trace'
 
     # The set of action, topic, service related events we might care about
     ACTION_SEND_GOAL_EVENT = 'task_action_send_goal'

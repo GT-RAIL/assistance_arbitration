@@ -27,7 +27,7 @@ class DatabaseServer(object):
     def __init__(self):
         # Provide a service to reload, then reload
         self._reload_service = rospy.Service('~reload', Trigger, self.reload)
-        self.reload(None)
+        self.reload()
 
         # Start up the service servers for the different query types
         self._waypoints_service = rospy.Service(
@@ -50,7 +50,7 @@ class DatabaseServer(object):
         # This is a no-op at the moment
         rospy.loginfo("Database node ready...")
 
-    def reload(self, req):
+    def reload(self, req=None):
         # Validate the data in each of the expected rosparams and populate the
         # database
         self.waypoints = self._validate_waypoints(rospy.get_param('~waypoints'))

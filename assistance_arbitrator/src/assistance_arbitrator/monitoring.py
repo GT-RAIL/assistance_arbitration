@@ -225,6 +225,8 @@ class ROSGraphMonitor(object):
         "/database/arm_joint_pose",
         "/database/trajectory",
         "/execute_kinematic_path",
+        # beliefs
+        "/beliefs/get_beliefs",
         # find_grasps
         "/suggester/suggest_grasps",
         "/suggester/pairwise_rank",
