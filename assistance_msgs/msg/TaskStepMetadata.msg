@@ -9,4 +9,3 @@ uint8 status
 # Any other step context information to be included in the trace.
 # This is a pickled byte array
 string context
-
