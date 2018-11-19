@@ -93,6 +93,48 @@ class Task(AbstractStep):
             }
             variables = {}
 
+            # First check to see if this a loop or choice. If so, update
+            # defs accordingly. current_step_def remains unchanged here
+            if step.has_key('loop'):
+                condition = step_params['condition']
+                rospy.loginfo("Loop {}: condition - {}".format(step_name, condition))
+                assert isinstance(condition, bool), "Invalid loop condition"
+
+                # We only loop while true. If done, move to next step
+                if not condition:
+                    self.step_idx += 1
+                    continue
+
+                # Update the step definition and step_params
+                step = step_params['loop_body']
+                step_params = {
+                    name: self._resolve_param(value, var, params)
+                    for name, value in step.get('params', {}).iteritems()
+                }
+            elif step.has_key('choice'):
+                condition = step_params['condition']
+                rospy.loginfo("Choice {}: condition - {}".format(step_name, condition))
+                assert isinstance(condition, bool), "Invalid choice condition"
+
+                # Based on the condition, update the step definition
+                # to the next step
+                if condition:
+                    step = step_params.get('if_true')
+                else:
+                    step = step_params.get('if_false')
+
+                #  If the body is not defined, then we move on to next
+                if step is None:
+                    rospy.loginfo("Choice {}: No task defined for condition - {}".format(step_name, condition))
+                    self.step_idx += 1
+                    continue
+
+                # Update the parameters associated with the step
+                step_params = {
+                    name: self._resolve_param(value, var, params)
+                    for name, value in step.get('params', {}).iteritems()
+                }
+
             # Check to see if this is an op. If so, run the op
             if step.has_key('op'):
                 self.current_step_def = self.current_executor = None
@@ -104,48 +146,6 @@ class Task(AbstractStep):
 
             # Otherwise, execute the action/task:
             else:
-                # First check to see if this a loop or choice. If so, update
-                # defs accordingly. current_step_def remains unchanged here
-                if step.has_key('loop'):
-                    condition = step_params['condition']
-                    rospy.loginfo("Loop {}: condition - {}".format(step_name, condition))
-                    assert isinstance(condition, bool), "Invalid loop condition"
-
-                    # We only loop while true. If done, move to next step
-                    if not condition:
-                        self.step_idx += 1
-                        continue
-
-                    # Update the step definition and step_params
-                    step = step_params['loop_body']
-                    step_params = {
-                        name: self._resolve_param(value, var, params)
-                        for name, value in step.get('params', {}).iteritems()
-                    }
-                elif step.has_key('choice'):
-                    condition = step_params['condition']
-                    rospy.loginfo("Choice {}: condition - {}".format(step_name, condition))
-                    assert isinstance(condition, bool), "Invalid choice condition"
-
-                    # Based on the condition, update the step definition
-                    # to the next step
-                    if condition:
-                        step = step_params.get('if_true')
-                    else:
-                        step = step_params.get('if_false')
-
-                    #  If the body is not defined, then we move on to next
-                    if step is None:
-                        rospy.loginfo("Choice {}: No task defined for condition - {}".format(step_name, condition))
-                        self.step_idx += 1
-                        continue
-
-                    # Update the parameters associated with the step
-                    step_params = {
-                        name: self._resolve_param(value, var, params)
-                        for name, value in step.get('params', {}).iteritems()
-                    }
-
                 # Then, set the appropriate executor
                 if step.has_key('action'):
                     self.current_executor = self.actions[step['action']]

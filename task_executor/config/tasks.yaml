@@ -1,4 +1,24 @@
 tasks:
+  # Test task
+  test:
+    steps:
+    - action: torso
+      params:
+        height: 0.4
+
+    - action: arm
+      params:
+        poses: joint_poses.ready
+
+    - task: perceive_and_pick
+      params:
+        obj: objects.thin_cube
+        verify_pick: true
+        abort_on_false: true
+        reset_arm: false
+      var:
+      - grasped
+
   # Setup for the main tasks
   setup:
     steps:
@@ -199,10 +219,11 @@ tasks:
       - cube_idx
 
   # Pick up a recognized cube given its grasps
-  pick:
+  pick_task:
     params:
     - cube_idx
     - grasps
+    - verify_pick
     - abort_on_false
 
     var:
@@ -215,12 +236,24 @@ tasks:
         grasps: params.grasps
 
     # This action updates the belief for the gripper having the object
-    - action: verify_grasp
+    - choice: should_verify_grasp
       params:
-        abort_on_false: params.abort_on_false
-      var:
-      - grasped
+        condition: params.verify_pick
+        if_true:
+          action: verify_grasp
+          params:
+            abort_on_false: params.abort_on_false
+          var:
+          - grasped
+        if_false:
+          op: assign
+          params:
+            var_name: grasped
+            value: true
+          var:
+          - grasped
 
+    # Update beliefs based on the verified grasp
     - choice: update_beliefs
       params:
         condition: var.grasped
@@ -235,6 +268,7 @@ tasks:
   perceive_and_pick:
     params:
     - obj
+    - verify_pick
     - abort_on_false
     - reset_arm
 
@@ -260,16 +294,17 @@ tasks:
       - grasps
 
     # Then send the result to pick
-    - task: pick
+    - task: pick_task
       params:
         cube_idx: var.cube_idx
         grasps: var.grasps
+        verify_pick: params.verify_pick
         abort_on_false: params.abort_on_false
       var:
       - grasped
 
   # Place the cube at the desired location
-  place:
+  place_task:
     steps:
     - action: look
       params:
@@ -287,7 +322,7 @@ tasks:
 
     - action: find_object
       params:
-        obj: objects.cube
+        obj: objects.thin_cube
       var:
       - found_idx
       - found_obj
@@ -332,7 +367,8 @@ tasks:
 
     - task: perceive_and_pick
       params:
-        obj: objects.cube
+        obj: objects.thin_cube
+        verify_pick: true
         abort_on_false: false
         reset_arm: false
       var:
@@ -344,7 +380,8 @@ tasks:
         if_false:
           task: perceive_and_pick
           params:
-            obj: objects.cube
+            obj: objects.thin_cube
+            verify_pick: true
             abort_on_false: true
             reset_arm: true
           var:
@@ -383,7 +420,7 @@ tasks:
         beep: unsure
         async: true
 
-    - task: place
+    - task: place_task
 
     - action: beep
       params:
@@ -441,7 +478,8 @@ tasks:
 
     - task: perceive_and_pick
       params:
-        obj: objects.cube
+        obj: objects.thin_cube
+        verify_pick: true
         abort_on_false: false
         reset_arm: false
       var:
@@ -453,7 +491,8 @@ tasks:
         if_false:
           task: perceive_and_pick
           params:
-            obj: objects.cube
+            obj: objects.thin_cube
+            verify_pick: true
             abort_on_false: true
             reset_arm: true
           var:
@@ -500,7 +539,7 @@ tasks:
         beep: unsure
         async: true
 
-    - task: place
+    - task: place_task
 
     - action: beep
       params:
