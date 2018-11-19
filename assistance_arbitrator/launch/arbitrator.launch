@@ -14,7 +14,6 @@
   <node name="diagnostics_monitor" pkg="assistance_arbitrator" type="diagnostics_monitor.py" />
   <node name="global_plan_monitor" pkg="assistance_arbitrator" type="global_plan_monitor.py" />
   <node name="localization_monitor" pkg="assistance_arbitrator" type="localization_monitor.py" />
-  <node name="octomap_monitor" pkg="assistance_arbitrator" type="octomap_monitor.py" />
 
   <node name="arm_pose_monitor" pkg="assistance_arbitrator" type="arm_pose_monitor.py" />
   <node name="gripper_closed_monitor" pkg="assistance_arbitrator" type="gripper_closed_monitor.py" />
