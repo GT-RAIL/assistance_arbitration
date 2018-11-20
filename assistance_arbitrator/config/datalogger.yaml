@@ -45,7 +45,7 @@ include_regex:
 - "/grasp_executor/preset_position/(.*)"
 - "/grasp_executor/execute_grasp/(.*)"
 - "/execute_trajectory/(.*)"
-- /move_group/(cancel|feedback|goal|result|status|monitored_planning_scene|motion_plan_request)
+- /move_group/(cancel|feedback|goal|result|status|monitored_planning_scene|motion_plan_request|display_contacts)
 - /planning_scene
 - /planning_scene_world
 - /collision_object
