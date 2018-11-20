@@ -25,7 +25,7 @@ class BaseStallMonitor(AbstractFaultMonitor):
     movement of the base. If there is a disconnect, flag the error
     """
 
-    BASE_COMMAND_TOPIC = "/base_controller/command"
+    BASE_COMMAND_TOPIC = "/cmd_vel"
     ODOM_TOPIC = "/odom"
     BASE_STALL_MONITOR_EVENT_NAME = "base_stall_update"
 
