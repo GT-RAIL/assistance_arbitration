@@ -15,6 +15,7 @@ string GRIPPER_HAS_OBJECT=gripper_has_object
 # Beliefs about doors
 string DOOR_1_OPEN=door_1_open
 string DOOR_2_OPEN=door_2_open
+string DOOR_3_OPEN=door_3_open
 
 # Beliefs about arm poses
 string ARM_AT_TUCK=arm_at_tuck

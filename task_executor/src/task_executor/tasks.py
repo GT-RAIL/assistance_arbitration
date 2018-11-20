@@ -137,7 +137,7 @@ class Task(AbstractStep):
 
             # Check to see if this is an op. If so, run the op
             if step.has_key('op'):
-                self.current_step_def = self.current_executor = None
+                self.current_executor = None
                 variables = getattr(ops, step['op'])(
                     current_variables=var,
                     current_params=params,
@@ -233,7 +233,7 @@ class Task(AbstractStep):
             self.var_values = var
 
             # Only move on if we're not a loop. Loop termination happens above
-            if self.current_step_def is None or self.current_step_def.get('loop') is None:
+            if self.current_step_def.get('loop') is None:
                 self.step_idx += 1
 
         # Finally, yield succeeded with the variables that should be local stack

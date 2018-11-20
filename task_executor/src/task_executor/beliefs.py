@@ -55,6 +55,7 @@ class BeliefsServer(object):
                 BeliefKeys.GRIPPER_HAS_OBJECT: np.nan,
                 BeliefKeys.DOOR_1_OPEN: np.nan,
                 BeliefKeys.DOOR_2_OPEN: np.nan,
+                BeliefKeys.DOOR_3_OPEN: np.nan,
                 BeliefKeys.ARM_AT_TUCK: np.nan,
                 BeliefKeys.ARM_AT_STOW: np.nan,
                 BeliefKeys.ARM_AT_READY: np.nan,

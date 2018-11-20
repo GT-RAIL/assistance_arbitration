@@ -2,22 +2,26 @@ tasks:
   # Test task
   test:
     steps:
-    - action: torso
+    - action: update_beliefs
       params:
-        height: 0.4
+        beliefs:
+          DOOR_1_OPEN: true
+          DOOR_2_OPEN: true
+          DOOR_3_OPEN: true
 
-    - action: arm
+    - task: traverse_doorways
       params:
-        poses: joint_poses.ready
-
-    - task: perceive_and_pick
-      params:
-        obj: objects.thin_cube
-        verify_pick: true
-        abort_on_false: true
-        reset_arm: false
-      var:
-      - grasped
+        beliefs_and_locations:
+        - key: DOOR_2_OPEN
+          values:
+            pre_loc: "locations.door2_out_facing_in"
+            post_loc: "locations.door2_in_facing_in"
+            door_belief: DOOR_2_OPEN
+        - key: DOOR_3_OPEN
+          values:
+            pre_loc: "locations.door3_out_facing_in"
+            post_loc: "locations.door3_in_facing_in"
+            door_belief: DOOR_3_OPEN
 
   # Setup for the main tasks
   setup:
@@ -35,6 +39,7 @@ tasks:
         beliefs:
           DOOR_1_OPEN: true
           DOOR_2_OPEN: true
+          DOOR_3_OPEN: true
 
     - action: torso
       params:
@@ -152,15 +157,16 @@ tasks:
       params:
         height: 0.0
 
-  # Go through a door
+  # Go through a doorway
   traverse_doorway:
     params:
     - pre_loc
     - post_loc
     - door_belief
+    - abort_on_true
 
     var:
-    - obstacle_in_front
+    - obstacle_found
 
     steps:
     - action: move
@@ -170,13 +176,80 @@ tasks:
     - action: check_obstacle_in_front
       params:
         belief: params.door_belief
-        abort_on_true: true
+        abort_on_true: params.abort_on_true
       var:
       - obstacle_in_front
 
-    - action: move
+    - op: make_boolean
       params:
-        location: params.post_loc
+        var_name: obstacle_in_front
+        bool_name: obstacle_found
+      var:
+      - obstacle_found
+
+    - choice: stop_if_blocked
+      params:
+        condition: var.obstacle_found
+        if_false:
+          action: move
+          params:
+            location: params.post_loc
+
+  # Choose a door and send the result to traverse if successful. Else, abort
+  choose_and_traverse_door:
+    params:
+    - beliefs_and_locations
+
+    var:
+    - try_next_door
+
+    steps:
+    - action: choose_first_true_belief
+      params:
+        belief_keys: params.beliefs_and_locations
+      var:
+      - door_belief
+      - pre_loc
+      - post_loc
+
+    - task: traverse_doorway
+      params:
+        pre_loc: var.pre_loc
+        post_loc: var.post_loc
+        door_belief: var.door_belief
+        abort_on_true: false
+      var:
+      - obstacle_found
+
+    - op: assign
+      params:
+        var_name: try_next_door
+        value: var.obstacle_found
+      var:
+      - try_next_door
+
+  # Go through one of the desired set of doors
+  traverse_doorways:
+    params:
+    - beliefs_and_locations
+
+    steps:
+    - op: assign
+      params:
+        var_name: try_next_door
+        value: true
+      var:
+      - try_next_door
+
+    - loop: choose_and_traverse_doors_loop
+      params:
+        condition: var.try_next_door
+        loop_body:
+          task: choose_and_traverse_door
+          params:
+            beliefs_and_locations: params.beliefs_and_locations
+          var:
+          - try_next_door
 
   # Perception is a task comprising of the find_objects and find_grasps subtasks
   perceive:
@@ -333,8 +406,11 @@ tasks:
           GRIPPER_HAS_OBJECT: false
           CUBE_AT_DROPOFF: true
 
-  # The alternate, easy, fetch and deliver task that we want to make robust
+  # Easy fetch and deliver task: go through a single doorway
   easy:
+    params:
+    - verify_pick
+
     steps:
     - action: beep
       params:
@@ -368,7 +444,7 @@ tasks:
     - task: perceive_and_pick
       params:
         obj: objects.thin_cube
-        verify_pick: true
+        verify_pick: params.verify_pick
         abort_on_false: false
         reset_arm: false
       var:
@@ -381,7 +457,7 @@ tasks:
           task: perceive_and_pick
           params:
             obj: objects.thin_cube
-            verify_pick: true
+            verify_pick: params.verify_pick
             abort_on_false: true
             reset_arm: true
           var:
@@ -402,13 +478,14 @@ tasks:
         beep: excited
         async: true
 
-    - task: traverse_doorway
+    - task: traverse_doorways
       params:
-        pre_loc: locations.door1_out_facing_in
-        post_loc: locations.door1_in_facing_in
-        door_belief: DOOR_1_OPEN
-      var:
-      - obstacle_in_front
+        beliefs_and_locations:
+        - key: DOOR_1_OPEN
+          values:
+            pre_loc: "locations.door1_out_facing_in"
+            post_loc: "locations.door1_in_facing_in"
+            door_belief: "DOOR_1_OPEN"
 
     - task: approach
       params:
@@ -436,8 +513,11 @@ tasks:
       params:
         beep: happy
 
-  # The alternate, hard, fetch and deliver task that we also want to make robust
+  # Hard fetch and deliver task: go through 2 doorways
   hard:
+    params:
+    - verify_pick
+
     steps:
     - action: beep
       params:
@@ -458,13 +538,19 @@ tasks:
         beep: playful
         async: true
 
-    - task: traverse_doorway
+    - task: traverse_doorways
       params:
-        pre_loc: locations.door2_out_facing_in
-        post_loc: locations.door2_in_facing_in
-        door_belief: DOOR_2_OPEN
-      var:
-      - obstacle_in_front
+        beliefs_and_locations:
+        - key: DOOR_2_OPEN
+          values:
+            pre_loc: "locations.door2_out_facing_in"
+            post_loc: "locations.door2_in_facing_in"
+            door_belief: DOOR_2_OPEN
+        - key: DOOR_3_OPEN
+          values:
+            pre_loc: "locations.door3_out_facing_in"
+            post_loc: "locations.door3_in_facing_in"
+            door_belief: DOOR_3_OPEN
 
     - task: approach
       params:
@@ -479,7 +565,7 @@ tasks:
     - task: perceive_and_pick
       params:
         obj: objects.thin_cube
-        verify_pick: true
+        verify_pick: params.verify_pick
         abort_on_false: false
         reset_arm: false
       var:
@@ -492,7 +578,7 @@ tasks:
           task: perceive_and_pick
           params:
             obj: objects.thin_cube
-            verify_pick: true
+            verify_pick: params.verify_pick
             abort_on_false: true
             reset_arm: true
           var:
@@ -513,21 +599,28 @@ tasks:
         beep: excited
         async: true
 
-    - task: traverse_doorway
+    - task: traverse_doorways
       params:
-        pre_loc: locations.door2_in_facing_out
-        post_loc: locations.door2_out_facing_out
-        door_belief: DOOR_2_OPEN
-      var:
-      - obstacle_in_front
+        beliefs_and_locations:
+        - key: DOOR_2_OPEN
+          values:
+            pre_loc: "locations.door2_in_facing_out"
+            post_loc: "locations.door2_out_facing_out"
+            door_belief: DOOR_2_OPEN
+        - key: DOOR_3_OPEN
+          values:
+            pre_loc: "locations.door3_in_facing_out"
+            post_loc: "locations.door3_out_facing_out"
+            door_belief: DOOR_3_OPEN
 
-    - task: traverse_doorway
+    - task: traverse_doorways
       params:
-        pre_loc: locations.door1_out_facing_in
-        post_loc: locations.door1_in_facing_in
-        door_belief: DOOR_1_OPEN
-      var:
-      - obstacle_in_front
+        beliefs_and_locations:
+        - key: DOOR_1_OPEN
+          values:
+            pre_loc: "locations.door1_out_facing_in"
+            post_loc: "locations.door1_in_facing_in"
+            door_belief: "DOOR_1_OPEN"
 
     - task: approach
       params:
@@ -554,3 +647,31 @@ tasks:
     - action: beep
       params:
         beep: happy
+
+  # Easy task with the cube: should verify the pick
+  easy_cube:
+    steps:
+    - task: easy
+      params:
+        verify_pick: true
+
+  # Easy task with the bracket: should not verify the pick
+  easy_bracket:
+    steps:
+    - task: easy
+      params:
+        verify_pick: false
+
+  # Hard task with the cube: should verify the pick
+  hard_cube:
+    steps:
+    - task: hard
+      params:
+        verify_pick: true
+
+  # Hard task with the cube: should not verify the pick
+  hard_bracket:
+    steps:
+    - task: hard
+      params:
+        verify_pick: false

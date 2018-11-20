@@ -83,6 +83,7 @@ class FindObjectAction(AbstractStep):
                 srv=self._segment_objects_srv.resolved_name,
                 segmented_objects=segmented_objects
             )
+            raise StopIteration()
 
         # Update the planning scene
         self._planning_scene_clear_srv()
@@ -95,6 +96,7 @@ class FindObjectAction(AbstractStep):
                 srv=self._planning_scene_clear_srv.resolved_name,
                 segmented_objects=segmented_objects
             )
+            raise StopIteration()
 
         req = AddObjectRequest()
         for idx, segmented_object in enumerate(segmented_objects.objects):
@@ -111,6 +113,7 @@ class FindObjectAction(AbstractStep):
                 srv=self._planning_scene_add_srv.resolved_name,
                 segmented_objects=segmented_objects
             )
+            raise StopIteration()
 
         # Find the object, based on constraints, among the objects
         found_idx, found_obj = self._find_obj(obj, segmented_objects)
