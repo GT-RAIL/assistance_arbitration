@@ -20,7 +20,7 @@ class GripperClosedMonitor(AbstractBeliefMonitor):
     """
 
     GRIPPER_STATE_TOPIC = "/gripper_state"
-    GRIPPER_CLOSED_VALUE = 0.004
+    GRIPPER_CLOSED_VALUE = 0.007
 
     def __init__(self):
         super(GripperClosedMonitor, self).__init__()

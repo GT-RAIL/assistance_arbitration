@@ -177,6 +177,7 @@ tasks:
       params:
         belief: params.door_belief
         abort_on_true: params.abort_on_true
+        update_negation: true
       var:
       - obstacle_in_front
 
@@ -325,6 +326,17 @@ tasks:
             value: true
           var:
           - grasped
+
+    # Update the belief for the gripper having the object if we are not running
+    # the verify action
+    - choice: should_update_gripper_belief
+      params:
+        condition: params.verify_pick
+        if_false:
+          action: update_beliefs
+          params:
+            beliefs:
+              GRIPPER_HAS_OBJECT: true
 
     # Update beliefs based on the verified grasp
     - choice: update_beliefs

@@ -13,7 +13,7 @@ from actionlib_msgs.msg import GoalStatus
 class GripperAction(AbstractStep):
 
     GRIPPER_ACTION_SERVER = "/gripper_controller/gripper_action"
-    GRIPPER_MAX_EFFORT = 50
+    GRIPPER_MAX_EFFORT = 200
     GRIPPER_OPEN_POSITION = 0.15
     GRIPPER_CLOSE_POSITION = 0.0
 

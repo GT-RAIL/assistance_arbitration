@@ -28,7 +28,10 @@ class CheckObstacleInFrontAction(AbstractStep):
         # Set a stopped flag
         self._stopped = False
 
-    def run(self, belief, binarize=False, abort_on_true=False):
+    def run(self, belief, binarize=False, abort_on_true=False, update_negation=False):
+        # binarize - belief should be updated as a binary, not a float
+        # abort_on_true - set an abort if there is an obstacle, else return the value
+        # update_negation - when updating the belief, update the negated value
         belief = getattr(BeliefKeys, belief, belief)
         rospy.loginfo("Action {}: Checking for an obstacle to update belief {}"
                       .format(self.name, belief))
@@ -63,7 +66,9 @@ class CheckObstacleInFrontAction(AbstractStep):
             value = np.sum(ranges_too_close) / len(ranges_too_close)
 
         # Update the belief
-        self.update_beliefs({ belief: value })
+        self.update_beliefs({
+            belief: ((not value) if binarize else (1 - value)) if update_negation else value
+        })
 
         # Return according to the specification
         if value and abort_on_true:
