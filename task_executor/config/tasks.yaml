@@ -2,26 +2,21 @@ tasks:
   # Test task
   test:
     steps:
-    - action: update_beliefs
+    - action: torso
       params:
-        beliefs:
-          DOOR_1_OPEN: true
-          DOOR_2_OPEN: true
-          DOOR_3_OPEN: true
+        height: 0.4
 
-    - task: traverse_doorways
+    - action: look
       params:
-        beliefs_and_locations:
-        - key: DOOR_2_OPEN
-          values:
-            pre_loc: "locations.door2_out_facing_in"
-            post_loc: "locations.door2_in_facing_in"
-            door_belief: DOOR_2_OPEN
-        - key: DOOR_3_OPEN
-          values:
-            pre_loc: "locations.door3_out_facing_in"
-            post_loc: "locations.door3_in_facing_in"
-            door_belief: DOOR_3_OPEN
+        pose: gripper_poses.object_look_location
+
+    - action: find_object
+      params:
+        obj: objects.thin_cube
+      var:
+      - found_idx
+      - found_obj
+
 
   # Setup for the main tasks
   setup:
