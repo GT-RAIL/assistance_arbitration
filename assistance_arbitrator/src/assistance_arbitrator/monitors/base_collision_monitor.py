@@ -78,7 +78,7 @@ class BaseCollisionMonitor(AbstractFaultMonitor):
         # Cache the pointer to the costmap
         costmap = self._latest_costmap
         if costmap is None:
-            return
+            return None
 
         # Get the robot's position
         try:
@@ -90,7 +90,7 @@ class BaseCollisionMonitor(AbstractFaultMonitor):
             # Don't need the orientation as we have a circular footprint
             # _, _, theta = tf.transformations.euler_from_quaternion(rot)
         except (tf.LookupException, tf.ExtrapolationException):
-            return
+            return None
 
         # Check the collision of each point in the robot's footprint
         try:
@@ -103,10 +103,10 @@ class BaseCollisionMonitor(AbstractFaultMonitor):
             )
         except Exception as e:
             rospy.logerr("Error checking collisions: {}".format(e))
-            return
+            return None
 
         # Update the trace if necessary
-        self.update_trace(
+        return self.update_trace(
             BaseCollisionMonitor.BASE_COLLISION_MONITOR_EVENT_NAME,
             self.base_in_collision,
             { 'base_in_collision': self.base_in_collision }

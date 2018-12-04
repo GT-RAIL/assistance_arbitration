@@ -63,7 +63,7 @@ class BaseStallMonitor(AbstractFaultMonitor):
     def _on_odom(self, odom_msg):
         with self._cmd_lock:
             if self._last_cmd_vel is None:
-                return
+                return None
 
             cmd_vel_zero = np.isclose(
                 np.linalg.norm([self._last_cmd_vel.linear.x, self._last_cmd_vel.linear.y, self._last_cmd_vel.linear.z]),
@@ -78,10 +78,11 @@ class BaseStallMonitor(AbstractFaultMonitor):
 
         # If the commanded velocity is 0, then we don't need to do anything.
         # Make sure to reset all the detection flags too
+        trace_event = None  # The message that was published in the end
         if cmd_vel_zero:
             self.base_is_stalled = False
             if self._last_stall_detection_published:
-                self.update_trace(
+                trace_event = self.update_trace(
                     BaseStallMonitor.BASE_STALL_MONITOR_EVENT_NAME,
                     self.base_is_stalled,
                     { 'base_is_stalled': self.base_is_stalled }
@@ -89,7 +90,7 @@ class BaseStallMonitor(AbstractFaultMonitor):
 
             self._last_stall_detection = None
             self._last_stall_detection_published = False
-            return
+            return trace_event
 
         # Check to see if the odometry is reporting a zero
         odom_vel = odom_msg.twist.twist
@@ -109,7 +110,7 @@ class BaseStallMonitor(AbstractFaultMonitor):
         if not odom_vel_zero:
             self.base_is_stalled = False
             if self._last_stall_detection_published:
-                self.update_trace(
+                trace_event = self.update_trace(
                     BaseStallMonitor.BASE_STALL_MONITOR_EVENT_NAME,
                     self.base_is_stalled,
                     { 'base_is_stalled': self.base_is_stalled }
@@ -117,7 +118,7 @@ class BaseStallMonitor(AbstractFaultMonitor):
 
             self._last_stall_detection = None
             self._last_stall_detection_published = False
-            return
+            return trace_event
 
         # Now for the tree of cases, one of which leads to an event being sent
         # to the trace. We don't want to spam the trace at 100 Hz.
@@ -127,12 +128,14 @@ class BaseStallMonitor(AbstractFaultMonitor):
         elif rospy.Time.now() >= self._last_stall_detection + BaseStallMonitor.DETECTION_WAIT_DURATION \
                 and not self._last_stall_detection_published:
             rospy.loginfo("Detected a stalled robot base")
-            self.update_trace(
+            trace_event = self.update_trace(
                 BaseStallMonitor.BASE_STALL_MONITOR_EVENT_NAME,
                 self.base_is_stalled,
                 { 'base_is_stalled': self.base_is_stalled }
             )
             self._last_stall_detection_published = True
+
+        return trace_event
 
 
 # When running the monitor in standalone mode

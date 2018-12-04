@@ -34,7 +34,7 @@ class GripperClosedMonitor(AbstractBeliefMonitor):
 
     def _on_gripper_state(self, msg):
         value = msg.joints[0].position <= GripperClosedMonitor.GRIPPER_CLOSED_VALUE
-        self.update_beliefs({ BeliefKeys.GRIPPER_FULLY_CLOSED: value })
+        return self.update_beliefs({ BeliefKeys.GRIPPER_FULLY_CLOSED: value })
 
 
 # When running the monitor in standalone mode

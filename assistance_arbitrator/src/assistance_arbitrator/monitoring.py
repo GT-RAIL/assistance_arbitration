@@ -109,12 +109,14 @@ class AbstractFaultMonitor(object):
         fault_status can be a boolean value. If so, then a value of 'True'
         indicates the presence of a fault, while a value of 'False' indicates
         nominal operation.
+
+        Return the message that was sent to the trace
         """
         if type(fault_status) == bool:
             fault_status = MonitorMetadata.NOMINAL if not fault_status else MonitorMetadata.FAULT
 
         if fault_status == self.fault_status and not force:
-            return
+            return None
 
         # Update the fault_status
         self.fault_status = fault_status
@@ -132,6 +134,7 @@ class AbstractFaultMonitor(object):
             )
         )
         self._trace.publish(trace_event)
+        return trace_event
 
 
 class AbstractBeliefMonitor(object):
@@ -155,6 +158,10 @@ class AbstractBeliefMonitor(object):
 
     def update_beliefs(self, beliefs, context=None, force=False):
         """Take in a dictionary of beliefs and update them according to force"""
+        # Keep a record of the event messages that were sent
+        events_sent = []
+
+        # Update the beliefs as necessary
         for belief, value in beliefs.iteritems():
             value = float(value)
             assert 0 <= value <= 1, "Invalid value for belief, {}: {}".format(belief, value)
@@ -170,9 +177,13 @@ class AbstractBeliefMonitor(object):
                     )
                 )
                 self._trace.publish(trace_event)
+                events_sent.append(trace_event)
 
             # Cache the belief
             self.beliefs[belief] = value
+
+        # Finally return the messages that were sent
+        return events_sent
 
 
 class TraceMonitor(object):

@@ -46,7 +46,7 @@ class BatteryStateMonitor(AbstractFaultMonitor):
             or self.battery_state.battery_capacity <= BatteryStateMonitor.BATTERY_LOW_CAPACITY
         )
 
-        self.update_trace(
+        return self.update_trace(
             BatteryStateMonitor.BATTERY_STATE_MONITOR_EVENT_NAME,
             battery_is_low,
             { 'battery_state': self.battery_state }

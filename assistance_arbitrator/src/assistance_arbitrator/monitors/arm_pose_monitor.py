@@ -70,7 +70,9 @@ class ArmPoseMonitor(AbstractBeliefMonitor):
                 belief: (np.linalg.norm(arm_pose - belief_pose) <= ArmPoseMonitor.JOINT_STATE_TOLERANCE)
                 for belief, belief_pose in self._pose_belief_checks.iteritems()
             }
-            self.update_beliefs(beliefs)
+
+            # Return the messages that were sent
+            return self.update_beliefs(beliefs)
         except ValueError as e:
             pass
 

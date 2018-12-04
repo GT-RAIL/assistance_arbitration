@@ -69,7 +69,7 @@ class LocalizationMonitor(AbstractFaultMonitor):
             )
             trans, rot = np.array(trans), np.array(rot)
         except (tf.LookupException, tf.ExtrapolationException):
-            return
+            return None
 
         # Check the limits from the odom reported values
         max_bound_linear = (
@@ -91,7 +91,7 @@ class LocalizationMonitor(AbstractFaultMonitor):
             is_outside_bounds = True
 
         # Send an event update
-        self.update_trace(
+        trace_event = self.update_trace(
             LocalizationMonitor.LOCALIZATION_MONITOR_EVENT_NAME,
             is_outside_bounds,
             { 'diff_linear': diff_linear, 'diff_angular': diff_angular }
@@ -100,6 +100,9 @@ class LocalizationMonitor(AbstractFaultMonitor):
         # Update the values of the saved pose
         self._last_position = trans
         self._last_orientation = rot
+
+        # Return the message that was sent
+        return trace_event
 
 
 # When running the monitor in standalone mode

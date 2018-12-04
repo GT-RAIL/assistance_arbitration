@@ -54,7 +54,7 @@ class WifiMonitor(AbstractFaultMonitor):
             (out, _) = proc.communicate()
         except Exception as e:
             rospy.logerr("Error checking WiFi status: {}".format(e))
-            return
+            return None
 
         # Try to get the signal level
         old_level = self.signal_level
@@ -78,7 +78,7 @@ class WifiMonitor(AbstractFaultMonitor):
         rospy.loginfo("WiFi connection is {}".format(wifi_status))
 
         # Send out an event if thresholds are crossed
-        self.update_trace(
+        return self.update_trace(
             WifiMonitor.WIFI_MONITOR_EVENT_NAME,
             wifi_status != WifiMonitor.WIFI_GOOD_CONNECTION,
             { 'wifi_status': wifi_status, 'signal_level': self.signal_level }

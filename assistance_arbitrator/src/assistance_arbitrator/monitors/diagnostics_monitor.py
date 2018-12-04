@@ -41,6 +41,9 @@ class DiagnosticsMonitor(AbstractFaultMonitor):
         )
 
     def _on_diagnostics(self, msg):
+        # Keep a record of the events that were sent
+        events_sent = []
+
         for diagnostic_status in msg.status:
             # HACK: Update the name if this is in simulation
             if self._in_simulation:
@@ -60,12 +63,15 @@ class DiagnosticsMonitor(AbstractFaultMonitor):
 
             # If the status has changed, then force an update on the trace
             if diagnostic_changed:
-                self.update_trace(
+                events_sent.append(self.update_trace(
                     "{}: {}".format(DiagnosticsMonitor.DIAGNOSTICS_MONITOR_EVENT_NAME, diagnostic_status.name),
                     diagnostic_status.level != DiagnosticStatus.OK,
                     { 'diagnostic': diagnostic_status },
                     force=True
-                )
+                ))
+
+        # Finally return all the events that were sent
+        return events_sent
 
 
 # When running the monitor in standalone mode

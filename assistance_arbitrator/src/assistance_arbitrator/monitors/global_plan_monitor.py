@@ -81,7 +81,7 @@ class GlobalPlanMonitor(AbstractFaultMonitor):
         # conditions
         costmap, plan = self._latest_costmap, self._latest_plan
         if costmap is None or plan is None:
-            return
+            return None
 
         # Iterate through the plan and check for collisions. If found, fire...
         plan_in_collision = False
@@ -94,7 +94,7 @@ class GlobalPlanMonitor(AbstractFaultMonitor):
                     rospy.Time(0)
                 )
             except (tf.LookupException, tf.ExtrapolationException):
-                return
+                return None
 
             # Try to lookup if the position is in collision. Ignore assertion
             # errors as those simply indicate that we're outside costmap bounds
@@ -110,7 +110,7 @@ class GlobalPlanMonitor(AbstractFaultMonitor):
                 continue
             except Exception as e:
                 rospy.logerr("Error checking collisions: {}".format(e))
-                return
+                return None
 
             # Stop if this point is already deemed to be in collision
             if plan_in_collision:
@@ -119,7 +119,7 @@ class GlobalPlanMonitor(AbstractFaultMonitor):
         # Update the value of the plan collision variable and publish to the
         # trace stream
         self.plan_in_collision = plan_in_collision
-        self.update_trace(
+        return self.update_trace(
             GlobalPlanMonitor.GLOBAL_PLAN_MONITOR_EVENT_NAME,
             self.plan_in_collision,
             { 'plan_in_collision': self.plan_in_collision }

@@ -36,7 +36,7 @@ class TorsoRaisedMonitor(AbstractBeliefMonitor):
     def _on_joint_states(self, msg):
         try:
             idx = msg.name.index(TorsoRaisedMonitor.TORSO_JOINT_NAME)
-            self.update_beliefs({
+            return self.update_beliefs({
                 BeliefKeys.TORSO_RAISED: (msg.position[idx] >= TorsoRaisedMonitor.TORSO_JOINT_RAISED_THRESHOLD)
             })
         except ValueError as e:

@@ -44,13 +44,14 @@ class BreakerStateMonitor(AbstractFaultMonitor):
         breaker_states = {
             breaker.name: breaker.state for breaker in state_msg.breakers
         }
-        self.update_trace(
+        trace_event = self.update_trace(
             BreakerStateMonitor.BREAKER_STATE_MONITOR_EVENT_NAME,
             np.any(np.array([state for state in breaker_states.itervalues()]) != BreakerState.STATE_ENABLED),
             { 'breaker_states': breaker_states },
             force=(breaker_states != self.breaker_states)
         )
         self.breaker_states = breaker_states
+        return trace_event
 
 
 # When running the monitor in standalone mode
