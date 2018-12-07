@@ -2,6 +2,7 @@
 # All the monitors in this folder
 
 # Fault Monitors
+from .arm_contact_monitor import ArmContactMonitor
 from .base_collision_monitor import BaseCollisionMonitor
 from .base_stall_monitor import BaseStallMonitor
 from .battery_state_monitor import BatteryStateMonitor

@@ -59,6 +59,7 @@
   <depend>power_msgs</depend>
   <depend>ros_topology_msgs</depend>
   <depend>rospy</depend>
+  <depend>visualization_msgs</depend>
 
   <exec_depend>local_strategy</exec_depend>
 
