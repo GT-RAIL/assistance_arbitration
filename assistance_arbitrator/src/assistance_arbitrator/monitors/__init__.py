@@ -12,6 +12,7 @@ from .diagnostics_monitor import DiagnosticsMonitor
 from .global_plan_monitor import GlobalPlanMonitor
 from .localization_monitor import LocalizationMonitor
 from .moveit_monitor import MoveItMonitor
+from .segmentation_monitor import SegmentationMonitor
 from .wifi_monitor import WifiMonitor
 
 # Belief Monitors
