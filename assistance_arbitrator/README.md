@@ -21,7 +21,9 @@ When running data collection in simulation, run (from the Workspace):
 roslaunch fetch_gazebo playground.launch
 roslaunch task_executor fetch_deliver.launch sim:=true start_all:=true task_executor:=false datalogger:=true
 rosrun rviz rviz -d fetch.rviz
+python visualize_run.py
 rosservice call /datalogger/start
+# Hit the visualizer start live update button
 roslaunch task_executor fetch_deliver.launch sim:=true task_executor:=true local_strategy:=false
 rosrun task_executor run_task.py <task_def>
 ```

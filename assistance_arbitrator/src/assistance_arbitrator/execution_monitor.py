@@ -33,8 +33,8 @@ class ExecutionMonitor(object):
         self._trace_stop_service = rospy.Service(ExecutionMonitor.TRACE_STOP_SERVICE, Trigger, self.stop)
 
     def start(self, req=None):
-        # Start the tracer
-        self.tracer.start()
+        # Start the tracer. FIXME: Commented out for the visulization tests
+        # self.tracer.start()
         return TriggerResponse(success=True)
 
     def stop(self, req=None):
