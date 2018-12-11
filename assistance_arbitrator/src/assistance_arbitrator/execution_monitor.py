@@ -9,6 +9,8 @@ import rospy
 from assistance_arbitrator.grapher import Grapher
 from assistance_arbitrator.tracer import Tracer
 
+from std_srvs.srv import Trigger, TriggerResponse
+
 
 # The main monitor class
 
@@ -18,11 +20,24 @@ class ExecutionMonitor(object):
     diagnoses
     """
 
+    TRACE_START_SERVICE = '/execution_monitor/start_trace'
+    TRACE_STOP_SERVICE = '/execution_monitor/stop_trace'
+
     def __init__(self):
         # Supplementary execution monitors
-        self.rosgraph_monitor = Grapher()
-        self.trace_monitor = Tracer()
+        self.grapher = Grapher()
+        self.tracer = Tracer()
 
-    def start(self):
-        # Nothing needs to be done on a start
-        pass
+        # Setup the services for the trace
+        self._trace_start_service = rospy.Service(ExecutionMonitor.TRACE_START_SERVICE, Trigger, self.start)
+        self._trace_stop_service = rospy.Service(ExecutionMonitor.TRACE_STOP_SERVICE, Trigger, self.stop)
+
+    def start(self, req=None):
+        # Start the tracer
+        self.tracer.start()
+        return TriggerResponse(success=True)
+
+    def stop(self, req=None):
+        # Stop the tracer
+        self.tracer.stop()
+        return TriggerResponse(success=True)

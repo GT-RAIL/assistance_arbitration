@@ -175,6 +175,7 @@ class Tracer(object):
         # Book-keeping variables to keep track of the trace state
         self.full_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
         self._trace = np.ones((len(Tracer.trace_types), Tracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan
+        self._should_trace = False  # Variable that determines whether to trace
 
         # Book-keeping variables to help with the trace parsing
         self._tasks_to_reset = set()
@@ -219,6 +220,12 @@ class Tracer(object):
     def trace(self):
         return self._trace[:, :self.num_events]
 
+    def start(self):
+        self._should_trace = True
+
+    def stop(self):
+        self._should_trace = False
+
     def initialize_trace(self, start_time):
         """Initialize the first trace event"""
         event = ExecutionEvent(stamp=start_time)
@@ -231,6 +238,10 @@ class Tracer(object):
 
     def exclude_from_trace(self, msg):
         """Check to see if the msg should be excluded from the trace"""
+        # We want to exclude if the tracer hasn't been started
+        if not self._should_trace:
+            return True
+
         # We want to ignore ROSGRAPH events
         if msg.type == ExecutionEvent.ROSGRAPH_EVENT:
             return True
