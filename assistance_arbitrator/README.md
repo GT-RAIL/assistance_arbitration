@@ -18,7 +18,7 @@ There are two strategies:
 When running data collection in simulation, run (from the Workspace):
 
 ```bash
-roslaunch fetch_gazebo playground.launch
+roslaunch fetch_gazebo task_worlds.launch task:=cube loc:=0 distractor:=0 doorway:=0
 roslaunch task_executor fetch_deliver.launch sim:=true start_all:=true task_executor:=false datalogger:=true
 rosrun rviz rviz -d fetch.rviz
 python visualize_run.py
