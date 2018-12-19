@@ -7,6 +7,8 @@ from __future__ import print_function, division
 import abc
 import pickle
 
+import numpy as np
+
 import rospy
 
 from assistance_msgs.msg import ExecutionEvent, MonitorMetadata, BeliefMetadata
@@ -54,7 +56,7 @@ class AbstractFaultMonitor(object):
 
         Return the message that was sent to the trace
         """
-        if type(fault_status) == bool:
+        if isinstance(fault_status, (bool, np.bool,)):
             fault_status = MonitorMetadata.NOMINAL if not fault_status else MonitorMetadata.FAULT
 
         if fault_status == self.fault_status and not force:

@@ -30,7 +30,7 @@ class BaseStallMonitor(AbstractFaultMonitor):
     BASE_STALL_MONITOR_EVENT_NAME = "base_stall_update"
 
     ZERO_VELOCITY_TOLERANCE = 0.009  # A value for velocity in odom signifying 0
-    DETECTION_WAIT_DURATION = rospy.Duration(30.0)  # Number of seconds to wait before considering the robot stalled
+    DETECTION_WAIT_DURATION = rospy.Duration(5.0)  # Number of seconds to wait before considering the robot stalled
 
     def __init__(self):
         super(BaseStallMonitor, self).__init__()
@@ -42,7 +42,6 @@ class BaseStallMonitor(AbstractFaultMonitor):
 
         self.base_is_stalled = False
         self._last_stall_detection = None
-        self._last_stall_detection_published = False
 
         # Setup the subscribers
         self._base_cmd_sub = rospy.Subscriber(
@@ -76,22 +75,6 @@ class BaseStallMonitor(AbstractFaultMonitor):
                 atol=BaseStallMonitor.ZERO_VELOCITY_TOLERANCE
             )
 
-        # If the commanded velocity is 0, then we don't need to do anything.
-        # Make sure to reset all the detection flags too
-        trace_event = None  # The message that was published in the end
-        if cmd_vel_zero:
-            self.base_is_stalled = False
-            if self._last_stall_detection_published:
-                trace_event = self.update_trace(
-                    BaseStallMonitor.BASE_STALL_MONITOR_EVENT_NAME,
-                    self.base_is_stalled,
-                    { 'base_is_stalled': self.base_is_stalled }
-                )
-
-            self._last_stall_detection = None
-            self._last_stall_detection_published = False
-            return trace_event
-
         # Check to see if the odometry is reporting a zero
         odom_vel = odom_msg.twist.twist
         odom_vel_zero = np.isclose(
@@ -105,35 +88,27 @@ class BaseStallMonitor(AbstractFaultMonitor):
             atol=BaseStallMonitor.ZERO_VELOCITY_TOLERANCE
         )
 
-        # If the odom velocity is non 0, then there is nothing to worry about.
-        # Reset everything and return
-        if not odom_vel_zero:
-            self.base_is_stalled = False
-            if self._last_stall_detection_published:
-                trace_event = self.update_trace(
-                    BaseStallMonitor.BASE_STALL_MONITOR_EVENT_NAME,
-                    self.base_is_stalled,
-                    { 'base_is_stalled': self.base_is_stalled }
-                )
-
-            self._last_stall_detection = None
-            self._last_stall_detection_published = False
+        # Now check to see if the timeout for the stall detection has passed
+        trace_event = None  # The message that was published in the end
+        base_is_stalled = bool(not cmd_vel_zero and odom_vel_zero)
+        if base_is_stalled and (
+            self._last_stall_detection is None
+            or rospy.Time.now() < self._last_stall_detection + BaseStallMonitor.DETECTION_WAIT_DURATION
+        ):
+            if self._last_stall_detection is None:
+                self._last_stall_detection = rospy.Time.now()
             return trace_event
+        elif not base_is_stalled:
+            self._last_stall_detection = None
 
-        # Now for the tree of cases, one of which leads to an event being sent
-        # to the trace. We don't want to spam the trace at 100 Hz.
-        self.base_is_stalled = True
-        if self._last_stall_detection is None:
-            self._last_stall_detection = rospy.Time.now()
-        elif rospy.Time.now() >= self._last_stall_detection + BaseStallMonitor.DETECTION_WAIT_DURATION \
-                and not self._last_stall_detection_published:
-            rospy.loginfo("Detected a stalled robot base")
-            trace_event = self.update_trace(
-                BaseStallMonitor.BASE_STALL_MONITOR_EVENT_NAME,
-                self.base_is_stalled,
-                { 'base_is_stalled': self.base_is_stalled }
-            )
-            self._last_stall_detection_published = True
+        # It has been a sufficient amount of time. Update the stall flag
+        self.base_is_stalled = base_is_stalled
+        trace_event = self.update_trace(
+            BaseStallMonitor.BASE_STALL_MONITOR_EVENT_NAME,
+            self.base_is_stalled,
+            { 'base_is_stalled': self.base_is_stalled,
+              'stall_start_time': self._last_stall_detection }
+        )
 
         return trace_event
 
