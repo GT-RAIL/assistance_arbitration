@@ -271,8 +271,8 @@ class Tracer(object):
 
         # Warn if there is an event that isn't a known trace type
         if (msg.type, msg.name) not in Tracer.trace_types:
-            print("[WARN]: Unknown event {} ({})"
-                  .format(msg.name, get_event_name(msg.type)))
+            rospy.logwarn("Unknown event {} ({})"
+                          .format(msg.name, get_event_name(msg.type)))
             return True
 
         # All is well, include in the trace
