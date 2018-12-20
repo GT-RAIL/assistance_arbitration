@@ -208,6 +208,19 @@ class Tracer(object):
             cls._trace_types_idx = { x: i for i, x in enumerate(Tracer.trace_types) }
         return cls._trace_types_idx
 
+    @staticmethod
+    def trace_idx_by_type(trace_type):
+        if trace_type == ExecutionEvent.BELIEF_EVENT:
+            trace_names = Tracer.INCLUDE_BELIEF_EVENTS
+        elif trace_type == ExecutionEvent.MONITOR_EVENT:
+            trace_names = Tracer.INCLUDE_MONITOR_EVENTS
+        elif trace_type == ExecutionEvent.TASK_STEP_EVENT:
+            trace_names = Tracer.INCLUDE_TASK_STEP_EVENTS
+        else:
+            raise ValueError("Unknown trace type: {}".format(trace_type))
+
+        return [Tracer.trace_types_idx[(trace_type, n,)] for n in trace_names]
+
     @property
     def num_events(self):
         return len(self.full_trace)
