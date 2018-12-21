@@ -17,10 +17,10 @@
   <node name="localization_monitor" pkg="assistance_arbitrator" type="localization_monitor.py" />
   <node name="look_direction_monitor" pkg="assistance_arbitrator" type="look_direction_monitor.py" />
   <node name="moveit_monitor" pkg="assistance_arbitrator" type="moveit_monitor.py" />
+  <node name="segmentation_monitor" pkg="assistance_arbitrator" type="segmentation_monitor.py" />
 
   <node name="arm_pose_monitor" pkg="assistance_arbitrator" type="arm_pose_monitor.py" />
   <node name="gripper_closed_monitor" pkg="assistance_arbitrator" type="gripper_closed_monitor.py" />
-  <node name="segmentation_monitor" pkg="assistance_arbitrator" type="segmentation_monitor.py" />
   <node name="torso_raised_monitor" pkg="assistance_arbitrator" type="torso_raised_monitor.py" />
 
   <!-- Simulation only detectors / belief monitors -->
