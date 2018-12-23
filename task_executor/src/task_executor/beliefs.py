@@ -59,6 +59,9 @@ class BeliefsServer(object):
                 BeliefKeys.ARM_AT_TUCK: np.nan,
                 BeliefKeys.ARM_AT_STOW: np.nan,
                 BeliefKeys.ARM_AT_READY: np.nan,
+                BeliefKeys.ROBOT_AT_PICKUP_1: np.nan,
+                BeliefKeys.ROBOT_AT_DOOR_1: np.nan,
+                BeliefKeys.ROBOT_AT_DROPOFF: np.nan,
             }
 
     def _on_trace(self, msg):

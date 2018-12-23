@@ -93,18 +93,21 @@ class Tracer(object):
 
     # Events to include. These are a list because they need to be ordered
     INCLUDE_BELIEF_EVENTS = [
-        'arm_at_ready',
-        'arm_at_stow',
-        'arm_at_tuck',
-        'cube_at_dropoff',
-        'cube_at_pickup_1',
-        'cube_at_pickup_2',
-        'door_1_open',
-        'door_2_open',
-        'door_3_open',
-        'gripper_fully_closed',
-        'gripper_has_object',
-        'torso_raised',
+        BeliefKeys.ARM_AT_READY,
+        BeliefKeys.ARM_AT_STOW,
+        BeliefKeys.ARM_AT_TUCK,
+        BeliefKeys.CUBE_AT_DROPOFF,
+        BeliefKeys.CUBE_AT_PICKUP_1,
+        BeliefKeys.CUBE_AT_PICKUP_2,
+        BeliefKeys.DOOR_1_OPEN,
+        BeliefKeys.DOOR_2_OPEN,
+        BeliefKeys.DOOR_3_OPEN,
+        BeliefKeys.GRIPPER_FULLY_CLOSED,
+        BeliefKeys.GRIPPER_HAS_OBJECT,
+        BeliefKeys.TORSO_RAISED,
+        BeliefKeys.ROBOT_AT_PICKUP_1,
+        BeliefKeys.ROBOT_AT_DOOR_1,
+        BeliefKeys.ROBOT_AT_DROPOFF,
     ]
     INCLUDE_MONITOR_EVENTS = [
         'arm_contact_update',

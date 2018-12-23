@@ -18,5 +18,6 @@ from .wifi_monitor import WifiMonitor
 
 # Belief Monitors
 from .arm_pose_monitor import ArmPoseMonitor
+from .base_location_monitor import BaseLocationMonitor
 from .gripper_closed_monitor import GripperClosedMonitor
 from .torso_raised_monitor import TorsoRaisedMonitor

@@ -20,6 +20,7 @@
   <node name="segmentation_monitor" pkg="assistance_arbitrator" type="segmentation_monitor.py" />
 
   <node name="arm_pose_monitor" pkg="assistance_arbitrator" type="arm_pose_monitor.py" />
+  <node name="base_location_monitor" pkg="assistance_arbitrator" type="base_location_monitor.py" />
   <node name="gripper_closed_monitor" pkg="assistance_arbitrator" type="gripper_closed_monitor.py" />
   <node name="torso_raised_monitor" pkg="assistance_arbitrator" type="torso_raised_monitor.py" />
 

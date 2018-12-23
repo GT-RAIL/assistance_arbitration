@@ -21,3 +21,8 @@ string DOOR_3_OPEN=door_3_open
 string ARM_AT_TUCK=arm_at_tuck
 string ARM_AT_STOW=arm_at_stow
 string ARM_AT_READY=arm_at_ready
+
+# Beliefs about the location of the robot base
+string ROBOT_AT_PICKUP_1=robot_at_pickup_1
+string ROBOT_AT_DOOR_1=robot_at_door_1
+string ROBOT_AT_DROPOFF=robot_at_dropoff
