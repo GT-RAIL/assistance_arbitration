@@ -48,14 +48,14 @@ class BeliefsServer(object):
         with self._beliefs_lock:
             self.beliefs = {
                 BeliefKeys.CUBE_AT_PICKUP_1: np.nan,
-                BeliefKeys.CUBE_AT_PICKUP_2: np.nan,
+                # BeliefKeys.CUBE_AT_PICKUP_2: np.nan,
                 BeliefKeys.CUBE_AT_DROPOFF: np.nan,
                 BeliefKeys.TORSO_RAISED: np.nan,
                 BeliefKeys.GRIPPER_FULLY_CLOSED: np.nan,
                 BeliefKeys.GRIPPER_HAS_OBJECT: np.nan,
                 BeliefKeys.DOOR_1_OPEN: np.nan,
-                BeliefKeys.DOOR_2_OPEN: np.nan,
-                BeliefKeys.DOOR_3_OPEN: np.nan,
+                # BeliefKeys.DOOR_2_OPEN: np.nan,
+                # BeliefKeys.DOOR_3_OPEN: np.nan,
                 BeliefKeys.ARM_AT_TUCK: np.nan,
                 BeliefKeys.ARM_AT_STOW: np.nan,
                 BeliefKeys.ARM_AT_READY: np.nan,

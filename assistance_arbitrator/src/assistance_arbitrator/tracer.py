@@ -54,7 +54,11 @@ class Tracer(object):
     TIME_EVENT = 255
 
     # Events to ignore
-    EXCLUDE_BELIEF_EVENTS = set([])
+    EXCLUDE_BELIEF_EVENTS = set([
+        BeliefKeys.CUBE_AT_PICKUP_2,
+        BeliefKeys.DOOR_2_OPEN,
+        BeliefKeys.DOOR_3_OPEN,
+    ])
     EXCLUDE_MONITOR_EVENTS = set([
         'diagnostics_update: Charger',
         'diagnostics_update: Gripper IMU Accelerometer',
@@ -98,10 +102,7 @@ class Tracer(object):
         BeliefKeys.ARM_AT_TUCK,
         BeliefKeys.CUBE_AT_DROPOFF,
         BeliefKeys.CUBE_AT_PICKUP_1,
-        BeliefKeys.CUBE_AT_PICKUP_2,
         BeliefKeys.DOOR_1_OPEN,
-        BeliefKeys.DOOR_2_OPEN,
-        BeliefKeys.DOOR_3_OPEN,
         BeliefKeys.GRIPPER_FULLY_CLOSED,
         BeliefKeys.GRIPPER_HAS_OBJECT,
         BeliefKeys.TORSO_RAISED,

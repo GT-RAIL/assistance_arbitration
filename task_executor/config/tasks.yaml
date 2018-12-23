@@ -33,8 +33,6 @@ tasks:
       params:
         beliefs:
           DOOR_1_OPEN: true
-          DOOR_2_OPEN: true
-          DOOR_3_OPEN: true
 
     - action: torso
       params:
@@ -342,7 +340,6 @@ tasks:
           params:
             beliefs:
               CUBE_AT_PICKUP_1: false
-              CUBE_AT_PICKUP_2: false
 
   # Find and pickup the cube
   perceive_and_pick:
@@ -392,6 +389,11 @@ tasks:
 
     - action: place
 
+    - action: update_beliefs
+      params:
+        beliefs:
+          GRIPPER_HAS_OBJECT: false
+
     - action: arm
       params:
         poses: joint_poses.ready
@@ -410,7 +412,6 @@ tasks:
     - action: update_beliefs
       params:
         beliefs:
-          GRIPPER_HAS_OBJECT: false
           CUBE_AT_DROPOFF: true
 
   # Easy fetch and deliver task: go through a single doorway
@@ -534,7 +535,8 @@ tasks:
     - task: setup
 
     # Simulate some reasoning that leads us to believe the object of interest is
-    # at location 2
+    # at location 2. FIXME: This belief needs to be updated after a pick so that
+    # we preserve sanity
     - action: update_beliefs
       params:
         beliefs:
