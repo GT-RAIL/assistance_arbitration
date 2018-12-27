@@ -170,6 +170,7 @@ tasks:
       params:
         belief: params.door_belief
         abort_on_true: params.abort_on_true
+        binarize: true
         update_negation: true
       var:
       - obstacle_in_front
