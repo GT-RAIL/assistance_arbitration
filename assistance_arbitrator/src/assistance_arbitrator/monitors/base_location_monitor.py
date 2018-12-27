@@ -25,7 +25,7 @@ class BaseLocationMonitor(AbstractBeliefMonitor):
     BASE_FRAME = "/base_link"           # Robot position
     DESIRED_COMPARISON_FRAME = "/map"   # Reference locations will be stored in this frame
     MONITORING_LOOP_RATE = 1            # Hz
-    LOCATION_RADIUS = 0.5               # Should be within a 50 cm radius of the location
+    LOCATION_RADIUS = 0.25              # Should be within a 25 cm radius of the location
 
     TRANSFORM_WAIT_DURATION = rospy.Duration(10.0)
 
