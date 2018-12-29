@@ -42,6 +42,7 @@ def main():
     # Initialize the action
     action = actions[args.action]
     action.init(args.action)
+    rospy.sleep(2.0)
 
     # Read the params
     def convert_params(d):
