@@ -264,7 +264,7 @@ tasks:
     # cloud. Otherwise we get loads of misaligned segmentations
     - action: wait
       params:
-        duration: 1.0
+        duration: 1.5
 
     - action: find_object
       params:
