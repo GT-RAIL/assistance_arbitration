@@ -70,12 +70,19 @@ class ArmContactMonitor(AbstractFaultMonitor):
         return self._update_contacts_present(len(msg.markers) > 0)
 
     def _reset_contacts(self, evt):
-        assert rospy.Time.now() > self._last_contact_time + ArmContactMonitor.MONITOR_RESET_DURATION, \
-            "Timing is off. Last contact @{}; Trying to reset @{}".format(
-                self._last_contact_time,
-                rospy.Time.now()
+        try:
+            assert rospy.Time.now() >= self._last_contact_time + ArmContactMonitor.MONITOR_RESET_DURATION, \
+                "Timing is off. Last contact @{}; Trying to reset @{}".format(self._last_contact_time, rospy.Time.now())
+        except Exception as e:
+            rospy.logerr("Error: {}".format(e))
+            self._reset_timer = rospy.Timer(
+                ArmContactMonitor.MONITOR_RESET_DURATION,
+                self._reset_contacts,
+                oneshot=True
             )
-        return self._update_contacts_present(False)
+        else:
+            self._reset_timer = None
+            return self._update_contacts_present(False)
 
 
 # When running the monitor in standalone mode
