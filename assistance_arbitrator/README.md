@@ -18,12 +18,39 @@ There are two strategies:
 When running data collection in simulation, run (from the Workspace):
 
 ```bash
-roslaunch fetch_gazebo task_worlds.launch task:=cube loc:=0 distractor:=0 doorway:=0
-roslaunch task_executor fetch_deliver.launch sim:=true start_all:=true task_executor:=false datalogger:=true
+# Start the simulation world
+roslaunch fetch_gazebo task_worlds.launch \
+    object_location_idx:=0|1|2 \
+    pickup_distraction:=none|cluttered|empty \
+    place_distraction:=none|cluttered \
+    door_blocked:=false|true \
+    door_block_invisible:=false|true \
+    head_moved:=false|true \
+    base_moved_back:=false|true \
+    base_stalled:=false|true \
+    base_collided:=false|true \
+    incorrect_map:=false|true \
+    hardware_failure:=false|true
+
+# Start the task executor dependencies
+roslaunch task_executor fetch_deliver.launch \
+    sim:=true \
+    start_all:=true \
+    task_executor:=false \
+    datalogger:=true \
+    incorrect_map:=false|true
+
+# Start debug aids, such as RViz
 rosrun rviz rviz -d fetch.rviz
 python visualize_run.py
+
+# Start the logging services
 rosservice call /datalogger/start
 # Hit the visualizer start live update button
+
+# Finally start the task executor
 roslaunch task_executor fetch_deliver.launch sim:=true task_executor:=true local_strategy:=false
+
+# And then execute a task
 rosrun task_executor run_task.py <task_def>
 ```
