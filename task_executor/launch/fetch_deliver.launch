@@ -33,13 +33,11 @@
 
   <!-- Other args -->
   <arg name="speech_gui" default="$(arg sim)" />
-  <arg name="incorrect_map" default="false" />
 
   <!-- Navigation -->
   <group if="$(arg navigation)">
     <include file="$(find fetch_navigation)/launch/fetch_nav.launch">
-      <arg name="map_file" value="$(arg map_file)" unless="$(arg incorrect_map)" />
-      <arg name="map_file" value="$(find fetch_maps)/maps/3_1_16_localization.yaml" if="$(arg incorrect_map)" />
+      <arg name="map_file" value="$(arg map_file)" />
     </include>
   </group>
 

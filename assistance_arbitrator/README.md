@@ -33,12 +33,7 @@ roslaunch fetch_gazebo task_worlds.launch \
     hardware_failure:=false|true
 
 # Start the task executor dependencies
-roslaunch task_executor fetch_deliver.launch \
-    sim:=true \
-    start_all:=true \
-    task_executor:=false \
-    datalogger:=true \
-    incorrect_map:=false|true
+roslaunch task_executor fetch_deliver.launch sim:=true start_all:=true task_executor:=false datalogger:=true
 
 # Start debug aids, such as RViz
 rosrun rviz rviz -d fetch.rviz
