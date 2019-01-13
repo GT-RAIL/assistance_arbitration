@@ -94,7 +94,7 @@ class DataLogger(object):
             included_topics = "|".join(self.config['include_regex'])
             print(included_topics)
             cmd.append('-e')
-            cmd.append('"{}"'.format(included_topics))
+            cmd.append('{}'.format(included_topics))
 
         if len(self.config['node']) > 0:
             cmd.append("--node={}".format(self.config['node']))
@@ -103,7 +103,7 @@ class DataLogger(object):
             excluded_topics = "|".join(self.config['exclude_regex'])
             print(excluded_topics)
             cmd.append('-x')
-            cmd.append('"{}"'.format(excluded_topics))
+            cmd.append('{}'.format(excluded_topics))
 
         print(cmd)
 
