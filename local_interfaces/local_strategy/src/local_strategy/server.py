@@ -58,7 +58,7 @@ class LocalRecoveryServer(object):
         result = self._server.get_default_result()
         result.stats.request_received = rospy.Time.now()
 
-        rospy.loginfo("Serving Assistance Request for: {} (status - {})"
+        rospy.loginfo("Local: Serving Assistance Request for: {} (status - {})"
                       .format(goal.component, goal.component_status))
         goal.context = pickle.loads(goal.context)
 
@@ -85,7 +85,7 @@ class LocalRecoveryServer(object):
 
         person = variables['person']
 
-        # Show exceitement and solicit help from them
+        # Show excitement and solicit help from them
         self.actions.beep(beep=SoundClient.BEEP_EXCITED)
         for response in self.dialogue_manager.request_help(person):
             if self._server.is_preempt_requested() or not self._server.is_active():

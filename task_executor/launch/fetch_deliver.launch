@@ -103,6 +103,11 @@
     <arg name="sim" value="$(arg sim)" />
   </include>
 
+  <!-- Remote recovery strategy -->
+  <include file="$(find remote_strategy)/launch/recovery_strategy.launch" if="$(arg remote_strategy)">
+    <arg name="sim" value="$(arg sim)" />
+  </include>
+
   <!-- Assistance arbitration -->
   <include file="$(find assistance_arbitrator)/launch/arbitrator.launch" if="$(arg arbitrator)">
     <arg name="sim" value="$(arg sim)" />
