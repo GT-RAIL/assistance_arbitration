@@ -66,6 +66,11 @@ add_message_files(
   ObjectConstraints.msg
   Bounds.msg
   ArmJointPose.msg
+
+  # Intervention Episode
+  InterventionEvent.msg
+  InterventionHypothesisMetadata.msg
+  InterventionActionMetadata.msg
 )
 
 ## Generate services in the 'srv' folder

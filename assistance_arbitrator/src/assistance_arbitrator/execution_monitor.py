@@ -6,7 +6,7 @@ from __future__ import print_function, division
 
 import rospy
 
-from assistance_arbitrator.grapher import Grapher
+# from assistance_arbitrator.grapher import Grapher
 from assistance_arbitrator.tracer import Tracer
 
 from std_srvs.srv import Trigger, TriggerResponse
@@ -25,7 +25,7 @@ class ExecutionMonitor(object):
 
     def __init__(self):
         # Supplementary execution monitors
-        self.grapher = Grapher()
+        # self.grapher = Grapher()
         self.tracer = Tracer()
 
         # Setup the services for the trace
@@ -33,8 +33,8 @@ class ExecutionMonitor(object):
         self._trace_stop_service = rospy.Service(ExecutionMonitor.TRACE_STOP_SERVICE, Trigger, self.stop)
 
     def start(self, req=None):
-        # Start the tracer. FIXME: Commented out for the visulization tests
-        # self.tracer.start()
+        # Start the tracer
+        self.tracer.start()
         return TriggerResponse(success=True)
 
     def stop(self, req=None):
