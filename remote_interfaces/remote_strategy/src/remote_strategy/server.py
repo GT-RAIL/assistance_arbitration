@@ -11,7 +11,10 @@ import rospy
 import actionlib
 
 from actionlib_msgs.msg import GoalStatus
-from assistance_msgs.msg import RequestAssistanceAction, RequestAssistanceResult
+from assistance_msgs.msg import (RequestAssistanceAction,
+                                 RequestAssistanceResult, InterventionEvent)
+
+from assistance_arbitrator.intervention_monitor import InterventionMonitor
 
 
 # The server performs local behaviours ro resume execution after contacting a

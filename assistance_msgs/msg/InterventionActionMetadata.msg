@@ -31,7 +31,8 @@ string SEGMENT_IMAGE=segment_image
 
 string UPDATE_BELIEFS=update_beliefs
 
-string TRY_FAILED_ACTION=try_failed_action
+string END_INTERVENTION=end_intervention
+# TODO: Kill and restart components, such as wifi, should also be actions
 
 string type
 

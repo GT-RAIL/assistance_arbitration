@@ -83,6 +83,8 @@ class RemoteController(object):
 
         # First the section for specifying the hypotheses
         hypothesis_layout = html.Div(
+            [html.H3('Failure Information', className='row'),
+             dcc.Markdown('', className='', id='failure-information')] +
             [html.H3('Fault Hypotheses', className='row')] +
             [html.Div(
                 [
@@ -99,7 +101,7 @@ class RemoteController(object):
                         dcc.Markdown("Confirmed", className='form-check-label'),
                     ], className='form-check col-4'),
                 ],
-                className='row my-5')
+                className='row my-4')
              for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)],
              style={
                 'float': 'left',
@@ -122,7 +124,7 @@ class RemoteController(object):
             ], className='container'),
 
             html.Div([
-                html.H4("Move", className='text-center mt-4'),
+                html.H4("Move", className='text-center mt-5'),
                 html.Div([
                     html.Button("Left", id='move-left-action', className='offset-1 col-1 btn btn-default'),
                     html.Button("Right", id='move-right-action', className='offset-2 col-1 btn btn-default'),
@@ -134,7 +136,7 @@ class RemoteController(object):
             # Relocalize will be set based on RViz input
 
             html.Div([
-                html.H4("Torso", className='text-center mt-4'),
+                html.H4("Torso", className='text-center mt-5'),
                 html.Div([
                     html.Button("Up", id='torso-up-action', className='offset-4 col-1 btn btn-default'),
                     html.Button("Down", id='torso-down-action', className='offset-2 col-1 btn btn-default'),
@@ -142,7 +144,7 @@ class RemoteController(object):
             ], className='container'),
 
             html.Div([
-                html.H4("Arm Movement", className='text-center mt-4'),
+                html.H4("Arm Movement", className='text-center mt-5'),
                 html.Div([
                     html.Button("Tuck", id='arm-position-tuck-action', className='offset-4 col-1 btn btn-default'),
                     html.Button("Ready", id='arm-position-ready-action', className='offset-2 col-1 btn btn-default'),
@@ -158,7 +160,7 @@ class RemoteController(object):
             ], className='container'),
 
             html.Div([
-                html.H4("Perception", className='text-center mt-4'),
+                html.H4("Perception", className='text-center mt-5'),
                 html.Div([
                     html.Button("Crop", id='crop-action', className='offset-4 col-1 btn btn-default'),
                     html.Button("Segment", id='segment-action', className='offset-2 col-1 btn btn-default'),
@@ -166,7 +168,7 @@ class RemoteController(object):
             ], className='container'),
 
             html.Div([
-                html.H4("Beliefs", className='text-center mt-4'),
+                html.H4("Beliefs", className='text-center mt-5'),
                 html.Div([
                     html.Button("Cube@Pickup", id='belief-cube-pickup-action', className='offset-1 col-2 btn btn-default'),
                     html.Button("~Cube@Pickup", id='belief-cube-not-pickup-action', className='col-2 btn btn-default'),
@@ -181,7 +183,7 @@ class RemoteController(object):
 
             html.Div([
                 html.H4(["Task Actions ", html.Span("(ends intervention)", className='small')],
-                        className='text-center mt-4'),
+                        className='text-center mt-5'),
                 html.Div([
                     html.Button("Retry", id='retry-action', className='offset-1 col-2 btn btn-default'),
                     html.Button("Restart", id='restart-action', className='offset-2 col-2 btn btn-default'),
