@@ -30,8 +30,6 @@ string CROP_IMAGE=crop_image
 string SEGMENT_IMAGE=segment_image
 
 string UPDATE_BELIEFS=update_beliefs
-
-string END_INTERVENTION=end_intervention
 # TODO: Kill and restart components, such as wifi, should also be actions
 
 string type

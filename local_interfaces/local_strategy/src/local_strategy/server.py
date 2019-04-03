@@ -9,7 +9,9 @@ import rospy
 import actionlib
 
 from actionlib_msgs.msg import GoalStatus
-from assistance_msgs.msg import RequestAssistanceAction, RequestAssistanceResult
+from assistance_msgs.msg import (RequestAssistanceAction,
+                                 RequestAssistanceResult, InterventionEvent,
+                                 InterventionStartEndMetadata)
 from power_msgs.srv import BreakerCommand
 
 from task_executor.actions import get_default_actions
@@ -27,6 +29,8 @@ class LocalRecoveryServer(object):
     look, speech, and point modules to request assistance
     """
 
+    INTERVENTION_TRACE_TOPIC = '/intervention_monitor/trace'
+
     def __init__(self):
         # Instantiate the action server to perform the recovery
         self._server = actionlib.SimpleActionServer(
@@ -34,6 +38,13 @@ class LocalRecoveryServer(object):
             RequestAssistanceAction,
             self.execute,
             auto_start=False
+        )
+
+        # The intervention trace publisher
+        self._trace_pub = rospy.Publisher(
+            LocalRecoveryServer.INTERVENTION_TRACE_TOPIC,
+            InterventionEvent,
+            queue_size=10
         )
 
         # The actions that we are interested in using
@@ -100,17 +111,30 @@ class LocalRecoveryServer(object):
             self._server.set_aborted(result)
             return
 
-        # If they agree to provide help, then continue
+        # If they agree to provide help, then continue. Remember to update the
+        # intervention trace
         result.stats.request_acked = rospy.Time.now()
+        trace_msg = InterventionEvent(stamp=result.stats.request_acked,
+                                      type=InterventionEvent.START_OR_END_EVENT)
+        trace_msg.start_end_metadata.status = InterventionStartEndMetadata.START
+        trace_msg.start_end_metadata.request = goal
+        trace_msg.start_end_metadata.request.context = pickle.dumps(goal.context)
+        self._trace_pub.publish(trace_msg)
         for response in self.dialogue_manager.await_help(goal):
             if self._server.is_preempt_requested() or not self._server.is_active():
                 self.dialogue_manager.reset_dialogue()
                 self._server.set_preempted(result)
                 return
 
-        # Return when the request for help is completed
+        # Return when the request for help is completed, and update the
+        # intervention trace
         result.resume_hint = response[DialogueManager.RESUME_HINT_RESPONSE_KEY]
         result.stats.request_complete = rospy.Time.now()
+        trace_msg = InterventionEvent(stamp=result.stats.request_complete,
+                                      type=InterventionEvent.START_OR_END_EVENT)
+        trace_msg.start_end_metadata.status = InterventionStartEndMetadata.END
+        trace_msg.start_end_metadata.response = result
+        self._trace_pub.publish(trace_msg)
         self._server.set_succeeded(result)
 
     def stop(self):

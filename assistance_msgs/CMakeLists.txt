@@ -69,6 +69,7 @@ add_message_files(
 
   # Intervention Episode
   InterventionEvent.msg
+  InterventionStartEndMetadata.msg
   InterventionHypothesisMetadata.msg
   InterventionActionMetadata.msg
 )
