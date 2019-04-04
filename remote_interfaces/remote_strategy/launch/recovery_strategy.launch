@@ -2,6 +2,9 @@
 <launch>
   <arg name="sim" default="false" />
 
+  <!-- Launch the remote controller -->
+  <node name="remote_controller" pkg="remote_strategy" type="controller_node.py" />
+
   <!-- Launch the recovery server -->
   <node name="remote_strategy" pkg="remote_strategy" type="server_node.py" output="screen" />
 </launch>

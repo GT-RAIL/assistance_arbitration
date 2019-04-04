@@ -10,6 +10,15 @@ import signal
 
 import rospy
 
+from assistance_msgs.msg import (RequestAssistanceResult, InterventionEvent,
+                                 InterventionHypothesisMetadata,
+                                 InterventionActionMetadata)
+from assistance_msgs.srv import (EnableRemoteControl,
+                                 EnableRemoteControlResponse,
+                                 DisableRemoteControl,
+                                 DisableRemoteControlResponse)
+from std_srvs.srv import Trigger, TriggerResponse
+
 # Plotly and Dash
 import plotly.graph_objs as go
 import dash
@@ -49,6 +58,18 @@ class RemoteController(object):
     # Specifying hypotheses
     MAX_NUM_HYPOTHESES = 6
 
+    # The trace topic
+    INTERVENTION_TRACE_TOPIC = '/intervention_monitor/trace'
+
+    # The services to enable and disable this controller
+    ENABLE_SERVICE = '/remote_controller/enable'
+    DISABLE_SERVICE = '/remote_controller/disable'
+
+    # The service to call when the remote controller needs to indicate that the
+    # recovery is complete and that it should be polled for the resume strategy.
+    # Ideally, this would be specified somewhere other than here
+    INTERVENTION_COMPLETE_SERVICE = '/remote_strategy/intervention_complete'
+
     def __init__(self):
         global APP
 
@@ -60,6 +81,22 @@ class RemoteController(object):
 
         # Create the stop signal handler
         signal.signal(signal.SIGINT, self.stop)
+
+        # The publisher of the trace
+        self._trace_pub = rospy.Publisher(
+            RemoteController.INTERVENTION_TRACE_TOPIC,
+            InterventionEvent,
+            queue_size=10
+        )
+
+        # Service proxy to indicate that the intervention is complete
+        self._complete_intervention_srv = rospy.ServiceProxy(RemoteController.INTERVENTION_COMPLETE_SERVICE, Trigger)
+
+        # Flags and services to enable and disable this controller
+        self._current_error = None
+        self._current_response = None
+        self._enable_service = rospy.Service(RemoteController.ENABLE_SERVICE, EnableRemoteControl, self.enable)
+        self._disable_service = rospy.Service(RemoteController.DISABLE_SERVICE, DisableRemoteControl, self.disable)
 
         # TODO: Create and register the different subscribers. Also create a
         # global state flag that enables or disables this controller, and which
@@ -75,6 +112,19 @@ class RemoteController(object):
         print("Shutting down Dash server")
         time.sleep(2)
         sys.exit(0)
+
+    def enable(self, req=None):
+        self._current_error = req.request
+        self._current_response = None
+        return EnableRemoteControlResponse()
+
+    def disable(self, req=None):
+        self._current_error = None
+        # This happens if the RViz window is closed and there is no recovery
+        # strategy that is provided. Default is to then exit from the task
+        if self._current_response is None:
+            self._current_response = RequestAssistanceResult(resume_hint=RequestAssistanceResult.RESUME_NONE)
+        return DisableRemoteControlResponse(response=self._current_response)
 
     def _define_app(self):
         """

@@ -87,6 +87,10 @@ add_service_files(
   GetArmGripperPose.srv
   GetArmJointPose.srv
   GetTrajectory.srv
+
+  # Remote Strategy
+  EnableRemoteControl.srv
+  DisableRemoteControl.srv
 )
 
 ## Generate actions in the 'action' folder

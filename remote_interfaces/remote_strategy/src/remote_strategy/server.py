@@ -14,6 +14,11 @@ from actionlib_msgs.msg import GoalStatus
 from assistance_msgs.msg import (RequestAssistanceAction,
                                  RequestAssistanceResult, InterventionEvent,
                                  InterventionStartEndMetadata)
+from assistance_msgs.srv import (EnableRemoteControl, EnableRemoteControlRequest,
+                                 DisableRemoteControl)
+from std_srvs.srv import Trigger, TriggerResponse
+
+from .controller import RemoteController
 
 
 # The server performs local behaviours ro resume execution after contacting a
@@ -30,9 +35,28 @@ class RemoteRecoveryServer(object):
         "fetch.rviz"
     )
 
-    INTERVENTION_TRACE_TOPIC = '/intervention_monitor/trace'
-
     def __init__(self):
+        # The service proxies to enable and disable the controller
+        self._controller_enable_srv = rospy.ServiceProxy(RemoteController.ENABLE_SERVICE, EnableRemoteControl)
+        self._controller_disable_srv = rospy.ServiceProxy(RemoteController.DISABLE_SERVICE, DisableRemoteControl)
+
+        # The intervention trace publisher
+        self._trace_pub = rospy.Publisher(
+            RemoteController.INTERVENTION_TRACE_TOPIC,
+            InterventionEvent,
+            queue_size=10
+        )
+
+        # The remote interface pointers
+        self._rviz_process = None
+
+        # A service that can be called when the recovery process is complete
+        self._completion_service = rospy.Service(
+            RemoteController.INTERVENTION_COMPLETE_SERVICE,
+            Trigger,
+            self._intervention_complete
+        )
+
         # Instantiate the action server to perform the recovery
         self._server = actionlib.SimpleActionServer(
             rospy.get_name(),
@@ -40,16 +64,6 @@ class RemoteRecoveryServer(object):
             self.execute,
             auto_start=False
         )
-
-        # The intervention trace publisher
-        self._trace_pub = rospy.Publisher(
-            RemoteRecoveryServer.INTERVENTION_TRACE_TOPIC,
-            InterventionEvent,
-            queue_size=10
-        )
-
-        # The remote interface pointers
-        self._rviz_process = None
 
     def start(self):
         # Start the action server and indicate that we are ready
@@ -74,14 +88,21 @@ class RemoteRecoveryServer(object):
         trace_msg.start_end_metadata.request.context = pickle.dumps(goal.context)
         self._trace_pub.publish(trace_msg)
 
+        enable_req = EnableRemoteControlRequest(request=goal)
+        enable_req.request.context = pickle.dumps(goal.context)
+        self._controller_enable_srv(enable_req)
+
         # Start an rviz process and wait until it is shut
         self._rviz_process = subprocess.Popen(
             ["rosrun", "rviz", "rviz", "-d", RemoteRecoveryServer.DEFAULT_RVIZ_VIEW]
         )
         self._rviz_process.wait()
+        self._rviz_process = None
 
-        # For now, simply return a stop as the desired behaviour
-        result.resume_hint = RequestAssistanceResult.RESUME_NONE
+        # For now, simply return a stop as the desired behaviour. TODO: Get the
+        # desired resumption strategy from the controller
+        disable_resp = self._controller_disable_srv()
+        result.resume_hint = disable_resp.response.resume_hint
         result.stats.request_complete = rospy.Time.now()
         trace_msg = InterventionEvent(stamp=result.stats.request_complete,
                                       type=InterventionEvent.START_OR_END_EVENT)
@@ -94,3 +115,8 @@ class RemoteRecoveryServer(object):
 
     def stop(self):
         pass
+
+    def _intervention_complete(self, req=None):
+        if self._rviz_process is not None and self._rviz_process.poll() is None:
+            self._rviz_process.terminate()
+        return TriggerResponse(success=True)
