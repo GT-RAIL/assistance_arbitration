@@ -27,7 +27,7 @@ def get_event_name(event_signature):
         ExecutionEvent.MONITOR_EVENT: 'MONITOR',
         ExecutionEvent.BELIEF_EVENT: 'BELIEF',
     }
-    return signatures[event_signature]
+    return signatures.get(event_signature, event_signature)
 
 
 def discretize_task_step_status(status):
