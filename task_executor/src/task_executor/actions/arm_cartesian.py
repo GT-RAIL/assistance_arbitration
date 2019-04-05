@@ -43,12 +43,12 @@ class ArmCartesianAction(AbstractStep):
         desired_angular_duration = [amt / ArmCartesianAction.ARM_VEL for amt in angular_amount]
 
         # First do a linear move if one exists
-        if sum(desired_linear_duration) > 0 and not self._stopped:
+        if sum([abs(x) for x in desired_linear_duration]) > 0 and not self._stopped:
             for variables in self._publish_velocity(desired_linear_duration, True):
                 yield variables
 
         # Then an angular move if it exists
-        if sum(desired_angular_duration) > 0 and not self._stopped:
+        if sum([abs(x) for x in desired_angular_duration]) > 0 and not self._stopped:
             for variables in self._publish_velocity(desired_angular_duration, False):
                 yield variables
 
@@ -65,7 +65,7 @@ class ArmCartesianAction(AbstractStep):
             msg = TwistStamped()
             msg.header.frame_id = "base_link"
             aspect = msg.twist.linear if is_linear else msg.twist.angular
-            if duration > 0:
+            if abs(duration) > 0:
                 if idx == 0:
                     aspect.x = (duration / abs(duration)) * ArmCartesianAction.ARM_VEL
                 elif idx == 1:
