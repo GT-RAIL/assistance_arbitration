@@ -25,6 +25,12 @@ string ARM_LINEAR_LEFT=arm_linear_left
 string ARM_LINEAR_RIGHT=arm_linear_right
 string ARM_LINEAR_FORWARD=arm_linear_forward
 string ARM_LINEAR_BACKWARD=arm_linear_backward
+string ARM_ANGULAR_ROLL_LEFT=arm_angular_roll_left
+string ARM_ANGULAR_ROLL_RIGHT=arm_angular_roll_right
+string ARM_ANGULAR_PITCH_DOWN=arm_angular_pitch_down
+string ARM_ANGULAR_PITCH_UP=arm_angular_pitch_up
+string ARM_ANGULAR_YAW_LEFT=arm_angular_yaw_left
+string ARM_ANGULAR_YAW_RIGHT=arm_angular_yaw_right
 
 # Perception
 string CROP_IMAGE=crop_image

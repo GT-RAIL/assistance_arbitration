@@ -12,7 +12,7 @@ import rospy
 
 from assistance_msgs.msg import (RequestAssistanceResult, InterventionEvent,
                                  InterventionHypothesisMetadata,
-                                 InterventionActionMetadata)
+                                 InterventionActionMetadata, BeliefKeys)
 from assistance_msgs.srv import (EnableRemoteControl,
                                  EnableRemoteControlResponse,
                                  DisableRemoteControl,
@@ -217,6 +217,14 @@ class RemoteController(object):
                     html.Button("Left", id='arm-linear-left-action', className='offset-2 col-1 btn btn-default'),
                     html.Button("Right", id='arm-linear-right-action', className='col-1 btn btn-default'),
                 ], className='row'),
+                html.Div([
+                    html.Button("Roll Left", id='arm-angular-roll-left-action', className='offset-1 col-1 btn btn-default'),
+                    html.Button("Roll Right", id='arm-angular-roll-right-action', className='col-1 btn btn-default'),
+                    html.Button("Pitch Down", id='arm-angular-pitch-down-action', className='offset-2 col-1 btn btn-default'),
+                    html.Button("Pitch Up", id='arm-angular-pitch-up-action', className='col-1 btn btn-default'),
+                    html.Button("Yaw Left", id='arm-angular-yaw-left-action', className='offset-2 col-1 btn btn-default'),
+                    html.Button("Yaw Right", id='arm-angular-yaw-right-action', className='col-1 btn btn-default'),
+                ], className='row'),
             ], className='container'),
 
             html.Div([
@@ -268,8 +276,19 @@ class RemoteController(object):
 class RobotController(object):
     """
     Provides semantically meaningful labels to the actions that are available
-    to the user through `RemoteController` and executes them.
+    to the user through `RemoteController`; also executes them.
     """
+
+    LOOK_TILT_STEP = 0.1
+    LOOK_PAN_STEP = 0.1
+
+    TORSO_STEP = 0.1
+
+    MOVE_LINEAR_STEP = 0.1
+    MOVE_ANGULAR_STEP = 0.1
+
+    ARM_LINEAR_STEP = 0.1
+    ARM_ANGULAR_STEP = 0.1
 
     def __init__(self, actions):
         self._enabled = False
@@ -290,3 +309,79 @@ class RobotController(object):
 
     def disable(self):
         self._disabled = False
+
+    def look_up(self):
+        self.actions.look_pan_tilt(tilt_amount=-RobotController.LOOK_TILT_STEP)
+
+    def look_down(self):
+        self.actions.look_pan_tilt(tilt_amount=RobotController.LOOK_TILT_STEP)
+
+    def look_left(self):
+        self.actions.look_pan_tilt(pan_amount=RobotController.LOOK_PAN_STEP)
+
+    def look_right(self):
+        self.actions.look_pan_tilt(pan_amount=-RobotController.LOOK_PAN_STEP)
+
+    def move_forward(self):
+        self.actions.move_planar(linear_amount=RobotController.MOVE_LINEAR_STEP)
+
+    def move_backward(self):
+        self.actions.move_planar(linear_amount=-RobotController.MOVE_LINEAR_STEP)
+
+    def move_left(self):
+        self.actions.move_planar(angular_amount=RobotController.MOVE_ANGULAR_STEP)
+
+    def move_right(self):
+        self.actions.move_planar(angular_amount=-RobotController.MOVE_ANGULAR_STEP)
+
+    def torso_up(self):
+        self.actions.torso_linear(amount=RobotController.TORSO_STEP)
+
+    def torso_down(self):
+        self.actions.torso_linear(amount=-RobotController.TORSO_STEP)
+
+    def arm_linear_up(self):
+        self.actions.arm_cartesian(linear_amount=[0, 0, RobotController.ARM_LINEAR_STEP])
+
+    def arm_linear_down(self):
+        self.actions.arm_cartesian(linear_amount=[0, 0, -RobotController.ARM_LINEAR_STEP])
+
+    def arm_linear_left(self):
+        self.actions.arm_cartesian(linear_amount=[0, -RobotController.ARM_LINEAR_STEP, 0])
+
+    def arm_linear_right(self):
+        self.actions.arm_cartesian(linear_amount=[0, RobotController.ARM_LINEAR_STEP, 0])
+
+    def arm_linear_forward(self):
+        self.actions.arm_cartesian(linear_amount=[RobotController.ARM_LINEAR_STEP, 0, 0])
+
+    def arm_linear_backward(self):
+        self.actions.arm_cartesian(linear_amount=[-RobotController.ARM_LINEAR_STEP, 0, 0])
+
+    def arm_angular_roll_left(self):
+        self.actions.arm_cartesian(angular_amount=[RobotController.ARM_ANGULAR_STEP, 0, 0])
+
+    def arm_angular_roll_right(self):
+        self.actions.arm_cartesian(angular_amount=[-RobotController.ARM_ANGULAR_STEP, 0, 0])
+
+    def arm_angular_pitch_down(self):
+        self.actions.arm_cartesian(angular_amount=[0, RobotController.ARM_ANGULAR_STEP, 0])
+
+    def arm_angular_pitch_up(self):
+        self.actions.arm_cartesian(angular_amount=[0, -RobotController.ARM_ANGULAR_STEP, 0])
+
+    def arm_angular_yaw_left(self):
+        self.actions.arm_cartesian(angular_amount=[0, 0, RobotController.ARM_ANGULAR_STEP])
+
+    def arm_angular_yaw_right(self):
+        self.actions.arm_cartesian(angular_amount=[0, 0, -RobotController.ARM_ANGULAR_STEP])
+
+    def arm_position(self, position):
+        assert position in ["tuck", "ready"], "Unknown position: {}".format(position)
+        self.actions.arm(poses="joint_poses.{}".format(position))
+
+    def update_beliefs(self, beliefs):
+        assert len(beliefs) == 1 and beliefs.keys()[0] in [
+            BeliefKeys.DOOR_1_OPEN, BeliefKeys.CUBE_AT_PICKUP_1, BeliefKeys.CUBE_AT_DROPOFF
+        ], "Unrecognized beliefs: {}".format(beliefs)
+        self.actions.update_beliefs(beliefs=beliefs)
