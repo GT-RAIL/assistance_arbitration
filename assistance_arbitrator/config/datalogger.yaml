@@ -7,6 +7,7 @@ include_regex:
 - /clock
 
 - /execution_monitor/trace
+- /intervention_monitor/trace
 
 - /joy
 - /teleop/cmd_vel
@@ -17,6 +18,7 @@ include_regex:
 - /joint_states
 - /odom
 
+- /arm_controller/cartesian_twist/command
 - "/arm_controller/follow_joint_trajectory/(.*)"
 - "/gripper_controller/(.*)"
 - "/head_controller/(follow_joint_trajectory|point_head)/(.*)"
@@ -32,6 +34,8 @@ include_regex:
 - "/hlpr_speech_commands"
 
 - /move_base/(cancel|feedback|goal|result|status)
+- /initialpose
+- /move_base_simple/goal
 
 - /rail_segmentation/segmented_objects
 - /rail_segmentation/segmented_table
