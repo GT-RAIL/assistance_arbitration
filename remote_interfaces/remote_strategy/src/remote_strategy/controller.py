@@ -19,6 +19,8 @@ from assistance_msgs.srv import (EnableRemoteControl,
                                  DisableRemoteControlResponse)
 from std_srvs.srv import Trigger, TriggerResponse
 
+from task_executor.actions import get_default_actions
+
 # Plotly and Dash
 import plotly.graph_objs as go
 import dash
@@ -98,16 +100,22 @@ class RemoteController(object):
         self._enable_service = rospy.Service(RemoteController.ENABLE_SERVICE, EnableRemoteControl, self.enable)
         self._disable_service = rospy.Service(RemoteController.DISABLE_SERVICE, DisableRemoteControl, self.disable)
 
+        # The robot controller
+        self.controller = RobotController(get_default_actions())
+
         # TODO: Create and register the different subscribers. Also create a
         # global state flag that enables or disables this controller, and which
         # can be switched on from the remote server
 
     def start(self):
+        self.controller.start()
         self._app.run_server(host=RemoteController.APP_HOST,
                              port=RemoteController.APP_PORT,
                              debug=False)
 
     def stop(self, *args, **kwargs):
+        self.controller.stop()
+
         # Give some time for rospy to shutdown
         print("Shutting down Dash server")
         time.sleep(2)
@@ -116,6 +124,7 @@ class RemoteController(object):
     def enable(self, req=None):
         self._current_error = req.request
         self._current_response = None
+        self.controller.enable()
         return EnableRemoteControlResponse()
 
     def disable(self, req=None):
@@ -124,6 +133,7 @@ class RemoteController(object):
         # strategy that is provided. Default is to then exit from the task
         if self._current_response is None:
             self._current_response = RequestAssistanceResult(resume_hint=RequestAssistanceResult.RESUME_NONE)
+        self.controller.disable()
         return DisableRemoteControlResponse(response=self._current_response)
 
     def _define_app(self):
@@ -251,3 +261,32 @@ class RemoteController(object):
 
         # Then register callbacks for each of the buttons
         # TODO: Requires setup of the ROS system
+
+
+# A class to map the actions of the buttons to robot actions
+
+class RobotController(object):
+    """
+    Provides semantically meaningful labels to the actions that are available
+    to the user through `RemoteController` and executes them.
+    """
+
+    def __init__(self, actions):
+        self._enabled = False
+
+        # First get the actions that have been defined in the task_executor
+        self.actions = actions
+
+        # Setup the subscribers to monitor the robot state, as necessary
+
+    def start(self):
+        self.actions.init()
+
+    def stop(self):
+        pass
+
+    def enable(self):
+        self._enabled = True
+
+    def disable(self):
+        self._disabled = False
