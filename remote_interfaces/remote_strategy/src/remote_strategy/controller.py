@@ -106,7 +106,8 @@ class RemoteController(object):
         # The robot controller
         self.controller = RobotController(get_default_actions(),
                                           intervention_trace_pub=self._trace_pub)
-        self._buttons = None  # Associate buttons to controller actions
+        self._action_buttons = None      # Buttons for controller actions
+        self._completion_buttons = None  # Buttons for ending the intervention
 
         # Register a subscriber to the localization and goal interfaces on RViz
         self._relocalize_subscriber = rospy.Subscriber(
@@ -284,7 +285,7 @@ class RemoteController(object):
 
         # Log all the buttons that we have defined above and associate them with
         # actions available in the controller
-        self._buttons = {
+        self._action_buttons = {
             'look-left-action': self.controller.look_left,
             'look-right-action': self.controller.look_right,
             'look-up-action': self.controller.look_up,
@@ -322,10 +323,14 @@ class RemoteController(object):
             'belief-cube-not-dropoff-action': self.controller.noop,
             'belief-door-open-action': self.controller.noop,
             'belief-door-closed-action': self.controller.noop,
+        }
 
-            'retry-action': self.controller.noop,
-            'restart-action': self.controller.noop,
-            'abort-action': self.controller.noop,
+        # Log the completion buttons that we have defined above and associate
+        # them with resumption hints
+        self._completion_buttons = {
+            'retry-action': RequestAssistanceResult.RESUME_CONTINUE,
+            'restart-action': RequestAssistanceResult.RESUME_RETRY,
+            'abort-action': RequestAssistanceResult.RESUME_NONE,
         }
 
         # The final layout of the interface
@@ -337,7 +342,7 @@ class RemoteController(object):
             [dash.dependencies.Input('interval-component', 'n_intervals')]
         )(self._define_enable_component_callback())
 
-        for button_id, button_cb in self._buttons.iteritems():
+        for button_id, button_cb in self._action_buttons.iteritems():
             self._app.callback(
                 dash.dependencies.Output(button_id, 'disabled'),
                 [dash.dependencies.Input('enable-component', 'value')]
@@ -346,7 +351,18 @@ class RemoteController(object):
             self._app.callback(
                 dash.dependencies.Output(button_id, 'autoFocus'),
                 [dash.dependencies.Input(button_id, 'n_clicks')]
-            )(self._define_button_action_callback(button_id, button_cb))
+            )(self._define_action_button_callback(button_id, button_cb))
+
+        for button_id, resume_hint in self._completion_buttons.iteritems():
+            self._app.callback(
+                dash.dependencies.Output(button_id, 'disabled'),
+                [dash.dependencies.Input('enable-component', 'value')]
+            )(self._define_button_enable_callback())
+
+            self._app.callback(
+                dash.dependencies.Output(button_id, 'autoFocus'),
+                [dash.dependencies.Input(button_id, 'n_clicks')]
+            )(self._define_completion_button_callback(button_id, resume_hint))
 
     def _define_enable_component_callback(self):
         def enable_component(*args):
@@ -358,15 +374,27 @@ class RemoteController(object):
             return (enabled != "Enabled")
         return button_enable
 
-    def _define_button_action_callback(self, button_id, button_cb):
-        def button_action(n_clicks):
+    def _define_action_button_callback(self, button_id, button_cb):
+        def action_button(n_clicks):
             if self._current_error is not None:
                 button_cb()
             return True
-        return button_action
+        return action_button
+
+    def _define_completion_button_callback(self, button_id, resume_hint):
+        def completion_button(n_clicks):
+            if self._current_error is not None:
+                assert self._current_response is None, "Current Response: {}".format(self._current_response)
+                self._current_response = RequestAssistanceResult(resume_hint=resume_hint)
+                self._complete_intervention_srv()
+            return True
+        return completion_button
 
     def _on_relocalize(self, msg):
         """Relocalization action taken on RViz"""
+        if self._current_error is None:
+            return
+
         event_msg = InterventionEvent(stamp=msg.header.stamp,
                                       type=InterventionEvent.ACTION_EVENT)
         event_msg.action_metadata.type = InterventionActionMetadata.RELOCALIZE
@@ -375,6 +403,9 @@ class RemoteController(object):
 
     def _on_move_goal(self, msg):
         """Move base goal provided on RViz"""
+        if self._current_error is None:
+            return
+
         event_msg = InterventionEvent(stamp=msg.header.stamp,
                                       type=InterventionEvent.ACTION_EVENT)
         event_msg.action_metadata.type = InterventionActionMetadata.MOVE_WAYPOINT
@@ -411,8 +442,7 @@ class RobotController(object):
         self._intervention_trace_pub = intervention_trace_pub
 
     def start(self):
-        # self.actions.init()
-        pass
+        self.actions.init()
 
     def stop(self):
         pass
