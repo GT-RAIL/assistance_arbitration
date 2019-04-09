@@ -337,11 +337,16 @@ class RemoteController(object):
             [dash.dependencies.Input('interval-component', 'n_intervals')]
         )(self._define_enable_component_callback())
 
-        for button_id in self._buttons.iterkeys():
+        for button_id, button_cb in self._buttons.iteritems():
             self._app.callback(
                 dash.dependencies.Output(button_id, 'disabled'),
                 [dash.dependencies.Input('enable-component', 'value')]
             )(self._define_button_enable_callback())
+
+            self._app.callback(
+                dash.dependencies.Output(button_id, 'autoFocus'),
+                [dash.dependencies.Input(button_id, 'n_clicks')]
+            )(self._define_button_action_callback(button_id, button_cb))
 
     def _define_enable_component_callback(self):
         def enable_component(*args):
@@ -352,6 +357,13 @@ class RemoteController(object):
         def button_enable(enabled):
             return (enabled != "Enabled")
         return button_enable
+
+    def _define_button_action_callback(self, button_id, button_cb):
+        def button_action(n_clicks):
+            if self._current_error is not None:
+                button_cb()
+            return True
+        return button_action
 
     def _on_relocalize(self, msg):
         """Relocalization action taken on RViz"""
