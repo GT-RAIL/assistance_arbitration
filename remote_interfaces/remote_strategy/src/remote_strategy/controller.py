@@ -6,10 +6,12 @@ from __future__ import print_function, division
 import os
 import sys
 import time
+import pickle
 import signal
 
 import rospy
 
+from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
 from assistance_msgs.msg import (RequestAssistanceResult, InterventionEvent,
                                  InterventionHypothesisMetadata,
                                  InterventionActionMetadata, BeliefKeys)
@@ -72,6 +74,10 @@ class RemoteController(object):
     # Ideally, this would be specified somewhere other than here
     INTERVENTION_COMPLETE_SERVICE = '/remote_strategy/intervention_complete'
 
+    # RViz topics
+    RELOCALIZATION_TOPIC = '/initialpose'
+    MOVE_GOAL_TOPIC = '/move_base_simple/goal'
+
     def __init__(self):
         global APP
 
@@ -103,9 +109,17 @@ class RemoteController(object):
         # The robot controller
         self.controller = RobotController(get_default_actions())
 
-        # TODO: Create and register the different subscribers. Also create a
-        # global state flag that enables or disables this controller, and which
-        # can be switched on from the remote server
+        # Register a subscriber to the localization and goal interfaces on RViz
+        self._relocalize_subscriber = rospy.Subscriber(
+            RemoteController.RELOCALIZATION_TOPIC,
+            PoseWithCovarianceStamped,
+            self._on_relocalize
+        )
+        self._move_goal_subscriber = rospy.Subscriber(
+            RemoteController.MOVE_GOAL_TOPIC,
+            PoseStamped,
+            self._on_move_goal
+        )
 
     def start(self):
         self.controller.start()
@@ -270,6 +284,22 @@ class RemoteController(object):
         # Then register callbacks for each of the buttons
         # TODO: Requires setup of the ROS system
 
+    def _on_relocalize(self, msg):
+        """Relocalization action taken on RViz"""
+        event_msg = InterventionEvent(stamp=msg.header.stamp,
+                                      type=InterventionEvent.ACTION_EVENT)
+        event_msg.action_metadata.type = InterventionActionMetadata.RELOCALIZE
+        event_msg.action_metadata.args = pickle.dumps(msg)
+        self._trace_pub.publish(event_msg)
+
+    def _on_move_goal(self, msg):
+        """Move base goal provided on RViz"""
+        event_msg = InterventionEvent(stamp=msg.header.stamp,
+                                      type=InterventionEvent.ACTION_EVENT)
+        event_msg.action_metadata.type = InterventionActionMetadata.MOVE_WAYPOINT
+        event_msg.action_metadata.args = pickle.dumps(msg)
+        self._trace_pub.publish(event_msg)
+
 
 # A class to map the actions of the buttons to robot actions
 
@@ -299,7 +329,8 @@ class RobotController(object):
         # Setup the subscribers to monitor the robot state, as necessary
 
     def start(self):
-        self.actions.init()
+        # self.actions.init()
+        pass
 
     def stop(self):
         pass
