@@ -175,8 +175,9 @@ class RemoteController(object):
                                   id='hypothesis_{}_certain'.format(idx),
                                   value=False,
                                   className="form-check-input"),
-                        dcc.Markdown("Confirmed", className='form-check-label'),
+                        html.Label("Confirmed", className='form-check-label'),
                     ], className='form-check col-4'),
+                    dcc.Input(id='hypothesis_{}_out'.format(idx), style={'display': 'none'}),
                 ],
                 id='hypothesis_{}'.format(idx), className='row my-4')
              for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)] +
@@ -364,6 +365,26 @@ class RemoteController(object):
                 [dash.dependencies.Input(button_id, 'n_clicks')]
             )(self._define_completion_button_callback(button_id, resume_hint))
 
+        for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES):
+            name = 'hypothesis_{}'.format(idx)
+
+            self._app.callback(
+                dash.dependencies.Output(name, 'style'),
+                [dash.dependencies.Input('enable-component', 'value')]
+            )(self._define_hypothesis_enable_callback())
+
+            self._app.callback(
+                dash.dependencies.Output('{}_out'.format(name), 'value'),
+                [dash.dependencies.Input('{}_value'.format(name), 'value')],
+                [dash.dependencies.State('{}_out'.format(name), 'value')]
+            )(self._define_hypothesis_selected_callback())
+
+            self._app.callback(
+                dash.dependencies.Output('{}_certain_out'.format(name), 'value'),
+                [dash.dependencies.Input('{}_certain'.format(name), 'checked')],
+                [dash.dependencies.State('{}_value'.format(name), 'value')]
+            )(self._define_hypothesis_certain_callback())
+
     def _define_enable_component_callback(self):
         def enable_component(*args):
             return "Enabled" if self._current_error is not None else "Disabled"
@@ -390,27 +411,57 @@ class RemoteController(object):
             return True
         return completion_button
 
+    def _define_hypothesis_enable_callback(self):
+        def hypothesis_enable(enabled):
+            return {} if enabled == 'Enabled' else {'display': 'none'}
+        return hypothesis_enable
+
+    def _define_hypothesis_selected_callback(self):
+        def hypothesis_selected(hypothesis, old_hypothesis):
+            if self._current_error is not None:
+                trace_msg = InterventionEvent(stamp=rospy.Time.now(),
+                                              type=InterventionEvent.HYPOTHESIS_EVENT)
+                if hypothesis is not None:
+                    trace_msg.hypothesis_metadata.name = hypothesis
+                    trace_msg.hypothesis_metadata.status = InterventionHypothesisMetadata.SUSPECTED
+                else:  # Hypothesis has been removed as a candidate
+                    assert old_hypothesis is not None, "Both hypothesis and old_hypothesis are None"
+                    trace_msg.hypothesis_metadata.name = old_hypothesis
+                    trace_msg.hypothesis_metadata.status = InterventionHypothesisMetadata.ABSENT
+                self._trace_pub.publish(trace_msg)
+
+            return hypothesis
+        return hypothesis_selected
+
+    def _define_hypothesis_certain_callback(self):
+        def hypothesis_certain(certain, hypothesis):
+            if self._current_error is not None and hypothesis is not None:
+                print("Hypothesis: {} is {}{}".format(hypothesis, certain, type(certain)))
+
+            return certain
+        return hypothesis_certain
+
     def _on_relocalize(self, msg):
         """Relocalization action taken on RViz"""
         if self._current_error is None:
             return
 
-        event_msg = InterventionEvent(stamp=msg.header.stamp,
+        trace_msg = InterventionEvent(stamp=msg.header.stamp,
                                       type=InterventionEvent.ACTION_EVENT)
-        event_msg.action_metadata.type = InterventionActionMetadata.RELOCALIZE
-        event_msg.action_metadata.args = pickle.dumps(msg)
-        self._trace_pub.publish(event_msg)
+        trace_msg.action_metadata.type = InterventionActionMetadata.RELOCALIZE
+        trace_msg.action_metadata.args = pickle.dumps(msg)
+        self._trace_pub.publish(trace_msg)
 
     def _on_move_goal(self, msg):
         """Move base goal provided on RViz"""
         if self._current_error is None:
             return
 
-        event_msg = InterventionEvent(stamp=msg.header.stamp,
+        trace_msg = InterventionEvent(stamp=msg.header.stamp,
                                       type=InterventionEvent.ACTION_EVENT)
-        event_msg.action_metadata.type = InterventionActionMetadata.MOVE_WAYPOINT
-        event_msg.action_metadata.args = pickle.dumps(msg)
-        self._trace_pub.publish(event_msg)
+        trace_msg.action_metadata.type = InterventionActionMetadata.MOVE_WAYPOINT
+        trace_msg.action_metadata.args = pickle.dumps(msg)
+        self._trace_pub.publish(trace_msg)
 
 
 # A class to map the actions of the buttons to robot actions
@@ -442,7 +493,8 @@ class RobotController(object):
         self._intervention_trace_pub = intervention_trace_pub
 
     def start(self):
-        self.actions.init()
+        # self.actions.init()
+        pass
 
     def stop(self):
         pass
