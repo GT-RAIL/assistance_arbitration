@@ -84,9 +84,6 @@ class RemoteController(object):
         # The Flask application
         self._app = APP
 
-        # Initialize the application
-        self._define_app()
-
         # Create the stop signal handler
         signal.signal(signal.SIGINT, self.stop)
 
@@ -107,7 +104,9 @@ class RemoteController(object):
         self._disable_service = rospy.Service(RemoteController.DISABLE_SERVICE, DisableRemoteControl, self.disable)
 
         # The robot controller
-        self.controller = RobotController(get_default_actions())
+        self.controller = RobotController(get_default_actions(),
+                                          intervention_trace_pub=self._trace_pub)
+        self._buttons = None  # Associate buttons to controller actions
 
         # Register a subscriber to the localization and goal interfaces on RViz
         self._relocalize_subscriber = rospy.Subscriber(
@@ -120,6 +119,9 @@ class RemoteController(object):
             PoseStamped,
             self._on_move_goal
         )
+
+        # Initialize the application
+        self._define_app()
 
     def start(self):
         self.controller.start()
@@ -158,11 +160,11 @@ class RemoteController(object):
         # First the section for specifying the hypotheses
         hypothesis_layout = html.Div(
             [html.H3('Failure Information', className='row'),
-             dcc.Markdown('', className='', id='failure-information')] +
+             dcc.Markdown('', id='failure-information')] +
             [html.H3('Fault Hypotheses', className='row')] +
             [html.Div(
                 [
-                    html.Div(dcc.Dropdown(id='hypothesis_{}'.format(idx),
+                    html.Div(dcc.Dropdown(id='hypothesis_{}_value'.format(idx),
                                           options=Annotations.RESULT_OPTIONS,
                                           value=None,
                                           className="dropdown form-control-sm"),
@@ -175,8 +177,10 @@ class RemoteController(object):
                         dcc.Markdown("Confirmed", className='form-check-label'),
                     ], className='form-check col-4'),
                 ],
-                className='row my-4')
-             for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)],
+                id='hypothesis_{}'.format(idx), className='row my-4')
+             for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)] +
+            [dcc.Interval(id='interval-component', n_intervals=0, interval=10),
+             dcc.Input(value="", id="enable-component", style={'display': 'none'})],
              style={
                 'float': 'left',
                 'width': '30%',
@@ -278,11 +282,76 @@ class RemoteController(object):
             'marginLeft': '31%',
         })
 
+        # Log all the buttons that we have defined above and associate them with
+        # actions available in the controller
+        self._buttons = {
+            'look-left-action': self.controller.look_left,
+            'look-right-action': self.controller.look_right,
+            'look-up-action': self.controller.look_up,
+            'look-down-action': self.controller.look_down,
+
+            'move-left-action': self.controller.move_left,
+            'move-right-action': self.controller.move_right,
+            'move-forward-action': self.controller.move_forward,
+            'move-backward-action': self.controller.move_backward,
+
+            'torso-up-action': self.controller.torso_up,
+            'torso-down-action': self.controller.torso_down,
+
+            'arm-position-tuck-action': self.controller.arm_position_tuck,
+            'arm-position-ready-action': self.controller.arm_position_ready,
+            'arm-linear-forward-action': self.controller.arm_linear_forward,
+            'arm-linear-backward-action': self.controller.arm_linear_backward,
+            'arm-linear-up-action': self.controller.arm_linear_up,
+            'arm-linear-down-action': self.controller.arm_linear_down,
+            'arm-linear-left-action': self.controller.arm_linear_left,
+            'arm-linear-right-action': self.controller.arm_linear_right,
+            'arm-angular-roll-left-action': self.controller.arm_angular_roll_left,
+            'arm-angular-roll-right-action': self.controller.arm_angular_roll_right,
+            'arm-angular-pitch-down-action': self.controller.arm_angular_pitch_down,
+            'arm-angular-pitch-up-action': self.controller.arm_angular_pitch_up,
+            'arm-angular-yaw-left-action': self.controller.arm_angular_yaw_left,
+            'arm-angular-yaw-right-action': self.controller.arm_angular_yaw_right,
+
+            'crop-action': self.controller.crop_image,
+            'segment-action': self.controller.segment_image,
+
+            'belief-cube-pickup-action': self.controller.noop,
+            'belief-cube-not-pickup-action': self.controller.noop,
+            'belief-cube-dropoff-action': self.controller.noop,
+            'belief-cube-not-dropoff-action': self.controller.noop,
+            'belief-door-open-action': self.controller.noop,
+            'belief-door-closed-action': self.controller.noop,
+
+            'retry-action': self.controller.noop,
+            'restart-action': self.controller.noop,
+            'abort-action': self.controller.noop,
+        }
+
         # The final layout of the interface
         self._app.layout = html.Div([hypothesis_layout, actions_layout])
 
         # Then register callbacks for each of the buttons
-        # TODO: Requires setup of the ROS system
+        self._app.callback(
+            dash.dependencies.Output('enable-component', 'value'),
+            [dash.dependencies.Input('interval-component', 'n_intervals')]
+        )(self._define_enable_component_callback())
+
+        for button_id in self._buttons.iterkeys():
+            self._app.callback(
+                dash.dependencies.Output(button_id, 'disabled'),
+                [dash.dependencies.Input('enable-component', 'value')]
+            )(self._define_button_enable_callback())
+
+    def _define_enable_component_callback(self):
+        def enable_component(*args):
+            return "Enabled" if self._current_error is not None else "Disabled"
+        return enable_component
+
+    def _define_button_enable_callback(self):
+        def button_enable(enabled):
+            return (enabled != "Enabled")
+        return button_enable
 
     def _on_relocalize(self, msg):
         """Relocalization action taken on RViz"""
@@ -320,13 +389,14 @@ class RobotController(object):
     ARM_LINEAR_STEP = 0.1
     ARM_ANGULAR_STEP = 0.1
 
-    def __init__(self, actions):
+    def __init__(self, actions, intervention_trace_pub=None):
         self._enabled = False
 
         # First get the actions that have been defined in the task_executor
         self.actions = actions
 
-        # Setup the subscribers to monitor the robot state, as necessary
+        # Setup trace publishers
+        self._intervention_trace_pub = intervention_trace_pub
 
     def start(self):
         # self.actions.init()
@@ -341,78 +411,131 @@ class RobotController(object):
     def disable(self):
         self._disabled = False
 
+    def _update_intervention_trace(self, action_type, **kwargs):
+        # We only update the intervention trace because the execution trace is
+        # automatically updated via the abstract step
+        if self._intervention_trace_pub is None:
+            return
+
+        trace_msg = InterventionEvent(stamp=rospy.Time.now(),
+                                      type=InterventionEvent.ACTION_EVENT)
+        trace_msg.action_metadata.type = action_type
+        trace_msg.action_metadata.args = pickle.dumps(kwargs)
+        self._intervention_trace_pub.publish(trace_msg)
+
+    def noop(self):
+        pass
+
     def look_up(self):
         self.actions.look_pan_tilt(tilt_amount=-RobotController.LOOK_TILT_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.LOOK_UP)
 
     def look_down(self):
         self.actions.look_pan_tilt(tilt_amount=RobotController.LOOK_TILT_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.LOOK_DOWN)
 
     def look_left(self):
         self.actions.look_pan_tilt(pan_amount=RobotController.LOOK_PAN_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.LOOK_LEFT)
 
     def look_right(self):
         self.actions.look_pan_tilt(pan_amount=-RobotController.LOOK_PAN_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.LOOK_RIGHT)
 
     def move_forward(self):
         self.actions.move_planar(linear_amount=RobotController.MOVE_LINEAR_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.MOVE_FORWARD)
 
     def move_backward(self):
         self.actions.move_planar(linear_amount=-RobotController.MOVE_LINEAR_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.MOVE_BACKWARD)
 
     def move_left(self):
         self.actions.move_planar(angular_amount=RobotController.MOVE_ANGULAR_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.MOVE_LEFT)
 
     def move_right(self):
         self.actions.move_planar(angular_amount=-RobotController.MOVE_ANGULAR_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.MOVE_RIGHT)
 
     def torso_up(self):
         self.actions.torso_linear(amount=RobotController.TORSO_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.TORSO_UP)
 
     def torso_down(self):
         self.actions.torso_linear(amount=-RobotController.TORSO_STEP)
+        self._update_intervention_trace(InterventionActionMetadata.TORSO_DOWN)
 
     def arm_linear_up(self):
         self.actions.arm_cartesian(linear_amount=[0, 0, RobotController.ARM_LINEAR_STEP])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_UP)
 
     def arm_linear_down(self):
         self.actions.arm_cartesian(linear_amount=[0, 0, -RobotController.ARM_LINEAR_STEP])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_DOWN)
 
     def arm_linear_left(self):
         self.actions.arm_cartesian(linear_amount=[0, -RobotController.ARM_LINEAR_STEP, 0])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_LEFT)
 
     def arm_linear_right(self):
         self.actions.arm_cartesian(linear_amount=[0, RobotController.ARM_LINEAR_STEP, 0])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_RIGHT)
 
     def arm_linear_forward(self):
         self.actions.arm_cartesian(linear_amount=[RobotController.ARM_LINEAR_STEP, 0, 0])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_FORWARD)
 
     def arm_linear_backward(self):
         self.actions.arm_cartesian(linear_amount=[-RobotController.ARM_LINEAR_STEP, 0, 0])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_BACKWARD)
 
     def arm_angular_roll_left(self):
         self.actions.arm_cartesian(angular_amount=[RobotController.ARM_ANGULAR_STEP, 0, 0])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_ROLL_LEFT)
 
     def arm_angular_roll_right(self):
         self.actions.arm_cartesian(angular_amount=[-RobotController.ARM_ANGULAR_STEP, 0, 0])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_ROLL_RIGHT)
 
     def arm_angular_pitch_down(self):
         self.actions.arm_cartesian(angular_amount=[0, RobotController.ARM_ANGULAR_STEP, 0])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_PITCH_DOWN)
 
     def arm_angular_pitch_up(self):
         self.actions.arm_cartesian(angular_amount=[0, -RobotController.ARM_ANGULAR_STEP, 0])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_PITCH_UP)
 
     def arm_angular_yaw_left(self):
         self.actions.arm_cartesian(angular_amount=[0, 0, RobotController.ARM_ANGULAR_STEP])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_YAW_LEFT)
 
     def arm_angular_yaw_right(self):
         self.actions.arm_cartesian(angular_amount=[0, 0, -RobotController.ARM_ANGULAR_STEP])
+        self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_YAW_RIGHT)
+
+    def arm_position_tuck(self):
+        self.arm_position('tuck')
+
+    def arm_position_ready(self):
+        self.arm_position('ready')
 
     def arm_position(self, position):
         assert position in ["tuck", "ready"], "Unknown position: {}".format(position)
         self.actions.arm(poses="joint_poses.{}".format(position))
+        self._update_intervention_trace(InterventionActionMetadata.ARM_POSITION, position=position)
+
+    def crop_image(self):
+        self.noop()
+        self._update_intervention_trace(InterventionActionMetadata.CROP_IMAGE)
+
+    def segment_image(self):
+        self.noop()
+        self._update_intervention_trace(InterventionActionMetadata.SEGMENT_IMAGE)
 
     def update_beliefs(self, beliefs):
         assert len(beliefs) == 1 and beliefs.keys()[0] in [
             BeliefKeys.DOOR_1_OPEN, BeliefKeys.CUBE_AT_PICKUP_1, BeliefKeys.CUBE_AT_DROPOFF
         ], "Unrecognized beliefs: {}".format(beliefs)
         self.actions.update_beliefs(beliefs=beliefs)
+        self._update_intervention_trace(InterventionActionMetadata.UPDATE_BELIEFS, beliefs=beliefs)
