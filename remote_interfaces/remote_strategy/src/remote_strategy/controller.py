@@ -6,6 +6,7 @@ from __future__ import print_function, division
 import os
 import sys
 import time
+import copy
 import json
 import pickle
 import signal
@@ -202,6 +203,7 @@ class RemoteController(object):
                 'float': 'left',
                 'width': '30%',
                 'position': 'fixed',
+                'overflow': 'scroll',
              },
              className='container'
         )
@@ -419,18 +421,16 @@ class RemoteController(object):
                 return ""
 
             # Just print out the keys from the assistance message
+            context = self._format_context(self._current_error.context)
+            context = json.dumps(context, indent=2, separators=(',', ':'))
             message = """
-**Component**: {x.component}
-
-**Status**: {x.component_status}
+**Component**: {x.component}, **Status**: {x.component_status}
 
 **Context**:
 ```
 {json}
 ```
-""".format(x=self._current_error, json=json.dumps(self._current_error.context or {},
-                                                  indent=0,
-                                                  separators=(',', ':')))
+""".format(x=self._current_error, json=context)
             return message
 
             # Otherwise, parse out the data from the assistance request
@@ -534,6 +534,22 @@ class RemoteController(object):
         trace_msg.action_metadata.args = pickle.dumps(msg)
         self._trace_pub.publish(trace_msg)
 
+    def _format_context(self, context):
+        # TODO: Make this a utility function in the arbitrator node
+        from move_base_msgs.msg import MoveBaseGoal, MoveBaseResult
+
+        for k, v in context.iteritems():
+            if isinstance(v, MoveBaseGoal):
+                context[k] = [v.target_pose.pose.position.x, v.target_pose.pose.position.y]
+
+            if isinstance(v, MoveBaseResult):
+                context[k] = None
+
+            if isinstance(v, dict):
+                context[k] = self._format_context(v)
+
+        return context
+
 
 # A class to map the actions of the buttons to robot actions
 
@@ -564,8 +580,7 @@ class RobotController(object):
         self._intervention_trace_pub = intervention_trace_pub
 
     def start(self):
-        # self.actions.init()
-        pass
+        self.actions.init()
 
     def stop(self):
         pass

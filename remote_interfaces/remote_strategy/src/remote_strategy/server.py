@@ -77,7 +77,6 @@ class RemoteRecoveryServer(object):
 
         rospy.loginfo("Remote: Serving Assistance Request for: {} (status - {})"
                       .format(goal.component, goal.component_status))
-        goal.context = pickle.loads(goal.context)
 
         # Set the request as acked and update the intervention trace
         result.stats.request_acked = rospy.Time.now()
@@ -85,11 +84,9 @@ class RemoteRecoveryServer(object):
                                       type=InterventionEvent.START_OR_END_EVENT)
         trace_msg.start_end_metadata.status = InterventionStartEndMetadata.START
         trace_msg.start_end_metadata.request = goal
-        trace_msg.start_end_metadata.request.context = pickle.dumps(goal.context)
         self._trace_pub.publish(trace_msg)
 
         enable_req = EnableRemoteControlRequest(request=goal)
-        enable_req.request.context = pickle.dumps(goal.context)
         self._controller_enable_srv(enable_req)
 
         # Start an rviz process and wait until it is shut
@@ -99,8 +96,7 @@ class RemoteRecoveryServer(object):
         self._rviz_process.wait()
         self._rviz_process = None
 
-        # For now, simply return a stop as the desired behaviour. TODO: Get the
-        # desired resumption strategy from the controller
+        # Get the desired resumption strategy
         disable_resp = self._controller_disable_srv()
         result.resume_hint = disable_resp.response.resume_hint
         result.stats.request_complete = rospy.Time.now()
