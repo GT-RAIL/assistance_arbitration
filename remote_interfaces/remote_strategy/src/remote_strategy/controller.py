@@ -6,6 +6,7 @@ from __future__ import print_function, division
 import os
 import sys
 import time
+import json
 import pickle
 import signal
 
@@ -140,6 +141,8 @@ class RemoteController(object):
 
     def enable(self, req=None):
         self._current_error = req.request
+        if self._current_error.context:
+            self._current_error.context = pickle.loads(self._current_error.context)
         self._current_response = None
         self.controller.enable()
         return EnableRemoteControlResponse()
@@ -351,9 +354,19 @@ class RemoteController(object):
 
         # Then register callbacks for each of the buttons
         self._app.callback(
+            dash.dependencies.Output('failure-information', 'children'),
+            [dash.dependencies.Input('enable-component', 'value')]
+        )(self._define_failure_information_callback())
+
+        self._app.callback(
             dash.dependencies.Output('enable-component', 'value'),
             [dash.dependencies.Input('interval-component', 'n_intervals')]
         )(self._define_enable_component_callback())
+
+        self._app.callback(
+            dash.dependencies.Output('hypotheses', 'style'),
+            [dash.dependencies.Input('enable-component', 'value')]
+        )(self._define_hypothesis_enable_callback())
 
         for button_id, button_cb in self._action_buttons.iteritems():
             self._app.callback(
@@ -387,11 +400,6 @@ class RemoteController(object):
             )(self._define_hypothesis_selected_callback())
 
         self._app.callback(
-            dash.dependencies.Output('hypotheses', 'style'),
-            [dash.dependencies.Input('enable-component', 'value')]
-        )(self._define_hypothesis_enable_callback())
-
-        self._app.callback(
             dash.dependencies.Output('hypotheses_certain_value', 'values'),
             [dash.dependencies.Input('hypotheses_certain_select', 'values')],
             [dash.dependencies.State('hypotheses_certain_value', 'values')] +
@@ -404,10 +412,39 @@ class RemoteController(object):
             return "Enabled" if self._current_error is not None else "Disabled"
         return enable_component
 
+    def _define_failure_information_callback(self):
+        def failure_information(enabled):
+            # If this is disabled, return nothing
+            if enabled != "Enabled":
+                return ""
+
+            # Just print out the keys from the assistance message
+            message = """
+**Component**: {x.component}
+
+**Status**: {x.component_status}
+
+**Context**:
+```
+{json}
+```
+""".format(x=self._current_error, json=json.dumps(self._current_error.context or {},
+                                                  indent=0,
+                                                  separators=(',', ':')))
+            return message
+
+            # Otherwise, parse out the data from the assistance request
+        return failure_information
+
     def _define_button_enable_callback(self):
         def button_enable(enabled):
             return (enabled != "Enabled")
         return button_enable
+
+    def _define_hypothesis_enable_callback(self):
+        def hypothesis_enable(enabled):
+            return {} if enabled == 'Enabled' else {'display': 'none'}
+        return hypothesis_enable
 
     def _define_action_button_callback(self, button_id, button_cb):
         def action_button(n_clicks):
@@ -425,16 +462,9 @@ class RemoteController(object):
             return True
         return completion_button
 
-    def _define_hypothesis_enable_callback(self):
-        def hypothesis_enable(enabled):
-            return {} if enabled == 'Enabled' else {'display': 'none'}
-        return hypothesis_enable
-
     def _define_hypothesis_selected_callback(self):
         def hypothesis_selected(hypothesis, old_hypothesis):
             if self._current_error is not None:
-                trace_msg = InterventionEvent(stamp=rospy.Time.now(),
-                                              type=InterventionEvent.HYPOTHESIS_EVENT)
                 if hypothesis is not None:
                     self._send_hypothesis_event(
                         hypothesis,
