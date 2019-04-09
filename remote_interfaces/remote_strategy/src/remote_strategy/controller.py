@@ -163,24 +163,36 @@ class RemoteController(object):
             [html.H3('Failure Information', className='row'),
              dcc.Markdown('', id='failure-information')] +
             [html.H3('Fault Hypotheses', className='row')] +
-            [html.Div(
-                [
-                    html.Div(dcc.Dropdown(id='hypothesis_{}_value'.format(idx),
-                                          options=Annotations.RESULT_OPTIONS,
-                                          value=None,
-                                          className="dropdown form-control-sm"),
-                             className='col-8'),
-                    html.Div([
-                        dcc.Input(type='checkbox',
-                                  id='hypothesis_{}_certain'.format(idx),
-                                  value=False,
-                                  className="form-check-input"),
-                        html.Label("Confirmed", className='form-check-label'),
-                    ], className='form-check col-4'),
-                    dcc.Input(id='hypothesis_{}_out'.format(idx), style={'display': 'none'}),
-                ],
-                id='hypothesis_{}'.format(idx), className='row my-4')
-             for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)] +
+            [html.Div([
+                html.Div(
+                    [html.Div([
+                        dcc.Dropdown(id='hypothesis_{}_select'.format(idx),
+                                     options=Annotations.RESULT_OPTIONS,
+                                     value=None,
+                                     className="dropdown form-control-sm"),
+                        dcc.Input(id='hypothesis_{}_value'.format(idx), style={'display': 'none'}),
+                     ], id='hypothesis_{}'.format(idx), className='my-4')
+                     for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)],
+                    className='col-8'
+                ),
+                dcc.Checklist(
+                    options=[
+                        { 'label': 'Confirmed', 'value': idx }
+                        for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)
+                    ],
+                    values=[],
+                    id='hypotheses_certain_select',
+                    className='my-3 col-4',
+                    labelClassName='my-3'
+                ),
+                dcc.Checklist(
+                    id="hypotheses_certain_value",
+                    style={'display': 'none'},
+                    values=[],
+                    options=[{'label': idx, 'value': idx} for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)]
+                ),
+            ], id='hypotheses', className='row'
+            )] +
             [dcc.Interval(id='interval-component', n_intervals=0, interval=10),
              dcc.Input(value="", id="enable-component", style={'display': 'none'})],
              style={
@@ -369,21 +381,23 @@ class RemoteController(object):
             name = 'hypothesis_{}'.format(idx)
 
             self._app.callback(
-                dash.dependencies.Output(name, 'style'),
-                [dash.dependencies.Input('enable-component', 'value')]
-            )(self._define_hypothesis_enable_callback())
-
-            self._app.callback(
-                dash.dependencies.Output('{}_out'.format(name), 'value'),
-                [dash.dependencies.Input('{}_value'.format(name), 'value')],
-                [dash.dependencies.State('{}_out'.format(name), 'value')]
+                dash.dependencies.Output('{}_value'.format(name), 'value'),
+                [dash.dependencies.Input('{}_select'.format(name), 'value')],
+                [dash.dependencies.State('{}_value'.format(name), 'value')]
             )(self._define_hypothesis_selected_callback())
 
-            self._app.callback(
-                dash.dependencies.Output('{}_certain_out'.format(name), 'value'),
-                [dash.dependencies.Input('{}_certain'.format(name), 'checked')],
-                [dash.dependencies.State('{}_value'.format(name), 'value')]
-            )(self._define_hypothesis_certain_callback())
+        self._app.callback(
+            dash.dependencies.Output('hypotheses', 'style'),
+            [dash.dependencies.Input('enable-component', 'value')]
+        )(self._define_hypothesis_enable_callback())
+
+        self._app.callback(
+            dash.dependencies.Output('hypotheses_certain_value', 'values'),
+            [dash.dependencies.Input('hypotheses_certain_select', 'values')],
+            [dash.dependencies.State('hypotheses_certain_value', 'values')] +
+            [dash.dependencies.State('hypothesis_{}_value'.format(idx), 'value')
+             for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)]
+        )(self._define_hypothesis_certain_callback())
 
     def _define_enable_component_callback(self):
         def enable_component(*args):
@@ -422,24 +436,51 @@ class RemoteController(object):
                 trace_msg = InterventionEvent(stamp=rospy.Time.now(),
                                               type=InterventionEvent.HYPOTHESIS_EVENT)
                 if hypothesis is not None:
-                    trace_msg.hypothesis_metadata.name = hypothesis
-                    trace_msg.hypothesis_metadata.status = InterventionHypothesisMetadata.SUSPECTED
+                    self._send_hypothesis_event(
+                        hypothesis,
+                        InterventionHypothesisMetadata.SUSPECTED
+                    )
                 else:  # Hypothesis has been removed as a candidate
                     assert old_hypothesis is not None, "Both hypothesis and old_hypothesis are None"
-                    trace_msg.hypothesis_metadata.name = old_hypothesis
-                    trace_msg.hypothesis_metadata.status = InterventionHypothesisMetadata.ABSENT
-                self._trace_pub.publish(trace_msg)
+                    self._send_hypothesis_event(
+                        old_hypothesis,
+                        InterventionHypothesisMetadata.ABSENT
+                    )
 
             return hypothesis
         return hypothesis_selected
 
     def _define_hypothesis_certain_callback(self):
-        def hypothesis_certain(certain, hypothesis):
-            if self._current_error is not None and hypothesis is not None:
-                print("Hypothesis: {} is {}{}".format(hypothesis, certain, type(certain)))
+        def hypothesis_certain(certain_idx, old_certain_idx, *hypotheses):
+            if self._current_error is not None:
+                cidx_set = set(certain_idx)
+                ocidx_set = set(old_certain_idx)
 
-            return certain
+                # First mark those hypotheses that are no longer certain
+                for idx in (ocidx_set - cidx_set):
+                    if hypotheses[idx] is not None:
+                        self._send_hypothesis_event(
+                            hypotheses[idx],
+                            InterventionHypothesisMetadata.SUSPECTED
+                        )
+
+                # Then make certain those hypotheses that were suspected
+                for idx in (cidx_set - ocidx_set):
+                    if hypotheses[idx] is not None:
+                        self._send_hypothesis_event(
+                            hypotheses[idx],
+                            InterventionHypothesisMetadata.CONFIRMED
+                        )
+
+            return certain_idx
         return hypothesis_certain
+
+    def _send_hypothesis_event(self, hypothesis, status):
+        trace_msg = InterventionEvent(stamp=rospy.Time.now(),
+                                      type=InterventionEvent.HYPOTHESIS_EVENT)
+        trace_msg.hypothesis_metadata.name = hypothesis
+        trace_msg.hypothesis_metadata.status = status
+        self._trace_pub.publish(trace_msg)
 
     def _on_relocalize(self, msg):
         """Relocalization action taken on RViz"""
