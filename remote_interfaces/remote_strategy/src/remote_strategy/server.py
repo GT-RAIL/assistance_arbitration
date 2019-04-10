@@ -8,6 +8,7 @@ import pickle
 import subprocess
 
 import rospy
+import rospkg
 import actionlib
 
 from actionlib_msgs.msg import GoalStatus
@@ -31,8 +32,8 @@ class RemoteRecoveryServer(object):
     """
 
     DEFAULT_RVIZ_VIEW = os.path.join(
-        os.path.dirname(os.getenv("CMAKE_PREFIX_PATH", "/home/banerjs/Workspaces/fetch/").split(':')[0]),
-        "fetch.rviz"
+        rospkg.RosPack().get_path('remote_strategy'),
+        "rviz/fetch.rviz"
     )
 
     def __init__(self):
