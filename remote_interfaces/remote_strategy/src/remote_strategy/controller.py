@@ -32,7 +32,11 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 # Import isolation
-sys.path.append('/home/banerjs/Libraries/RAIL/codebase/banerjs/isolation/models')
+try:
+    import isolation
+except ImportError as e:
+    sys.path.append('/home/banerjs/Libraries/RAIL/codebase/banerjs/isolation/models')
+    import isolation
 from isolation.data.annotations import Annotations
 
 

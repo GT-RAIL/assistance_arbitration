@@ -19,10 +19,6 @@ from std_srvs.srv import Trigger, TriggerResponse
 
 from assistance_arbitrator.tracer import Tracer
 
-# Import isolation
-sys.path.append('/home/banerjs/Libraries/RAIL/codebase/banerjs/isolation/models')
-from isolation.data.annotations import Annotations
-
 
 # The main monitor class
 
