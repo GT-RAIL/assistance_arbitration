@@ -226,7 +226,7 @@ Visualization Manager:
           Shaft Length: 1
           Shaft Radius: 0.05
           Shape: Arrow
-          Topic: /move_base/current_goal
+          Topic: /move_base/republished_goal
           Unreliable: false
           Value: false
         - Alpha: 1

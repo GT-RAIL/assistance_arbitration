@@ -16,7 +16,7 @@ class LookPanTiltAction(AbstractStep):
 
     JOINT_STATES_TOPIC = "/joint_states"
     HEAD_ACTION_SERVER = "/head_controller/follow_joint_trajectory"
-    HEAD_ACTION_DURATION = 2.1  # From the velocity limits in joystick_teleop
+    HEAD_ACTION_DURATION = 0.5  # The velocity limits in joystick_teleop suggest 2.1
 
     HEAD_PAN_JOINT_NAME = "head_pan_joint"
     HEAD_TILT_JOINT_NAME = "head_tilt_joint"

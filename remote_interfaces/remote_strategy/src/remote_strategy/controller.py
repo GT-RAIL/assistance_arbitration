@@ -539,14 +539,14 @@ class RemoteController(object):
         self._trace_pub.publish(trace_msg)
 
     def _format_context(self, context):
-        # TODO: Make this a utility function in the arbitrator node
-        from move_base_msgs.msg import MoveBaseGoal, MoveBaseResult
-
+        # TODO: Make this a utility function in the arbitrator node and handle
+        # additional data types or message types. Also include a flag for an
+        # automated diagnosis
         for k, v in context.iteritems():
-            if isinstance(v, MoveBaseGoal):
-                context[k] = [v.target_pose.pose.position.x, v.target_pose.pose.position.y]
-
-            if isinstance(v, MoveBaseResult):
+            if not (
+                isinstance(v, (bool, int, long, float, str, unicode, list, tuple, dict,))
+                or v is None
+            ):
                 context[k] = None
 
             if isinstance(v, dict):

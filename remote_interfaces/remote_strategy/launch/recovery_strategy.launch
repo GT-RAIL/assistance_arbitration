@@ -2,6 +2,9 @@
 <launch>
   <arg name="sim" default="false" />
 
+  <!-- Helper node to republish move_base commands for remote debugging -->
+  <node name="move_goal_republisher" pkg="remote_strategy" type="move_goal_republisher.py" />
+
   <!-- Launch the remote controller -->
   <node name="remote_controller" pkg="remote_strategy" type="controller_node.py" />
 
