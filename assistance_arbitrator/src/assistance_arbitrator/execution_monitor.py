@@ -7,7 +7,7 @@ from __future__ import print_function, division
 import rospy
 
 # from assistance_arbitrator.grapher import Grapher
-from assistance_arbitrator.tracer import Tracer
+from assistance_arbitrator.execution_tracer import Tracer
 
 from std_srvs.srv import Trigger, TriggerResponse
 

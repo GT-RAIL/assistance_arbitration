@@ -13,7 +13,7 @@ import rospy
 
 from assistance_msgs.msg import ExecutionEvent, MonitorMetadata, BeliefMetadata
 
-from assistance_arbitrator.tracer import Tracer
+from assistance_arbitrator.execution_tracer import Tracer
 
 
 # The class definitions

@@ -13,7 +13,7 @@ import rospy
 from ros_topology_msgs.msg import Connection, Node as NodeMsg, Graph as GraphMsg
 from assistance_msgs.msg import ExecutionEvent
 
-from assistance_arbitrator.tracer import Tracer
+from assistance_arbitrator.execution_tracer import Tracer
 
 
 # Helper classes and functions
