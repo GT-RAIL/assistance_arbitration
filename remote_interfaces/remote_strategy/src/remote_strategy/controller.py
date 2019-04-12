@@ -10,8 +10,12 @@ import copy
 import json
 import pickle
 import signal
+import inspect
+
+from functools import wraps
 
 import rospy
+import rospkg
 
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
 from assistance_msgs.msg import (RequestAssistanceResult, InterventionEvent,
@@ -25,11 +29,12 @@ from std_srvs.srv import Trigger, TriggerResponse
 
 from task_executor.actions import get_default_actions
 
-# Plotly and Dash
-import plotly.graph_objs as go
+# Plotly, Dash, and Flask
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
+
+from flask import jsonify
 
 # Import isolation
 try:
@@ -40,10 +45,26 @@ except ImportError as e:
 from isolation.data.annotations import Annotations
 
 
+# Helper functions and objects
+
+def enabled_check(f):
+    """
+    Adapted wrapper for methods from:
+    https://stackoverflow.com/questions/29215759/how-to-add-pre-post-methods-to-class-python
+    """
+    @wraps(f)
+    def wrapper(self, *args, **kwargs):
+        if not hasattr(self, '_enabled') or self._enabled:
+            f(self, *args, **kwargs)
+        return
+    return wrapper
+
+
 # The app class that contains the app configuration and the controller
 
 APP = dash.Dash(
     __name__,
+    assets_folder=os.path.join(rospkg.RosPack().get_path('remote_strategy'), 'dash_assets'),
     external_stylesheets=[
         {
             'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
@@ -64,6 +85,8 @@ class RemoteController(object):
     # Flask
     APP_HOST = '0.0.0.0'
     APP_PORT = 8080
+    APP_ENABLED_URL = '/ros_api/enabled'
+    APP_ENABLED_ENDPOINT = 'ros_enabled'
 
     # Specifying hypotheses
     MAX_NUM_HYPOTHESES = 6
@@ -89,6 +112,7 @@ class RemoteController(object):
 
         # The Flask application
         self._app = APP
+        self._flask_server = self._app.server
 
         # Create the stop signal handler
         signal.signal(signal.SIGINT, self.stop)
@@ -161,6 +185,9 @@ class RemoteController(object):
         self.controller.disable()
         return DisableRemoteControlResponse(response=self._current_response)
 
+    def _flask_enabled_endpoint(self):
+        return jsonify({ 'enabled': self._current_error is not None })
+
     def _define_app(self):
         """
         Define the app to control the robot.
@@ -201,8 +228,9 @@ class RemoteController(object):
                 ),
             ], id='hypotheses', className='row'
             )] +
-            [dcc.Interval(id='interval-component', n_intervals=0, interval=10),
-             dcc.Input(value="", id="enable-component", style={'display': 'none'})],
+            [html.Button(id="enable-component",
+                         n_clicks=int(self._current_error is None),
+                         style={'display': 'none'})],
              style={
                 'float': 'left',
                 'width': '30%',
@@ -361,23 +389,18 @@ class RemoteController(object):
         # Then register callbacks for each of the buttons
         self._app.callback(
             dash.dependencies.Output('failure-information', 'children'),
-            [dash.dependencies.Input('enable-component', 'value')]
+            [dash.dependencies.Input('enable-component', 'n_clicks')]
         )(self._define_failure_information_callback())
 
         self._app.callback(
-            dash.dependencies.Output('enable-component', 'value'),
-            [dash.dependencies.Input('interval-component', 'n_intervals')]
-        )(self._define_enable_component_callback())
-
-        self._app.callback(
             dash.dependencies.Output('hypotheses', 'style'),
-            [dash.dependencies.Input('enable-component', 'value')]
-        )(self._define_hypothesis_enable_callback())
+            [dash.dependencies.Input('enable-component', 'n_clicks')]
+        )(self._define_hypotheses_enable_callback())
 
         for button_id, button_cb in self._action_buttons.iteritems():
             self._app.callback(
                 dash.dependencies.Output(button_id, 'disabled'),
-                [dash.dependencies.Input('enable-component', 'value')]
+                [dash.dependencies.Input('enable-component', 'n_clicks')]
             )(self._define_button_enable_callback())
 
             self._app.callback(
@@ -388,7 +411,7 @@ class RemoteController(object):
         for button_id, resume_hint in self._completion_buttons.iteritems():
             self._app.callback(
                 dash.dependencies.Output(button_id, 'disabled'),
-                [dash.dependencies.Input('enable-component', 'value')]
+                [dash.dependencies.Input('enable-component', 'n_clicks')]
             )(self._define_button_enable_callback())
 
             self._app.callback(
@@ -411,17 +434,19 @@ class RemoteController(object):
             [dash.dependencies.State('hypotheses_certain_value', 'values')] +
             [dash.dependencies.State('hypothesis_{}_value'.format(idx), 'value')
              for idx in xrange(RemoteController.MAX_NUM_HYPOTHESES)]
-        )(self._define_hypothesis_certain_callback())
+        )(self._define_hypotheses_certain_callback())
 
-    def _define_enable_component_callback(self):
-        def enable_component(*args):
-            return "Enabled" if self._current_error is not None else "Disabled"
-        return enable_component
+        # Finally, define the flask API endpoint
+        self._flask_server.add_url_rule(
+            RemoteController.APP_ENABLED_URL,
+            RemoteController.APP_ENABLED_ENDPOINT,
+            self._flask_enabled_endpoint
+        )
 
     def _define_failure_information_callback(self):
-        def failure_information(enabled):
+        def failure_information(n_clicks):
             # If this is disabled, return nothing
-            if enabled != "Enabled":
+            if self._current_error is None:
                 return ""
 
             # Just print out the keys from the assistance message
@@ -441,14 +466,14 @@ class RemoteController(object):
         return failure_information
 
     def _define_button_enable_callback(self):
-        def button_enable(enabled):
-            return (enabled != "Enabled")
+        def button_enable(n_clicks):
+            return (self._current_error is None)
         return button_enable
 
-    def _define_hypothesis_enable_callback(self):
-        def hypothesis_enable(enabled):
-            return {} if enabled == 'Enabled' else {'display': 'none'}
-        return hypothesis_enable
+    def _define_hypotheses_enable_callback(self):
+        def hypotheses_enable(n_clicks):
+            return {} if self._current_error is not None else {'display': 'none'}
+        return hypotheses_enable
 
     def _define_action_button_callback(self, button_id, button_cb):
         def action_button(n_clicks):
@@ -484,8 +509,8 @@ class RemoteController(object):
             return hypothesis
         return hypothesis_selected
 
-    def _define_hypothesis_certain_callback(self):
-        def hypothesis_certain(certain_idx, old_certain_idx, *hypotheses):
+    def _define_hypotheses_certain_callback(self):
+        def hypotheses_certain(certain_idx, old_certain_idx, *hypotheses):
             if self._current_error is not None:
                 cidx_set = set(certain_idx)
                 ocidx_set = set(old_certain_idx)
@@ -507,7 +532,7 @@ class RemoteController(object):
                         )
 
             return certain_idx
-        return hypothesis_certain
+        return hypotheses_certain
 
     def _send_hypothesis_event(self, hypothesis, status):
         trace_msg = InterventionEvent(stamp=rospy.Time.now(),
@@ -542,6 +567,9 @@ class RemoteController(object):
         # TODO: Make this a utility function in the arbitrator node and handle
         # additional data types or message types. Also include a flag for an
         # automated diagnosis
+        if not isinstance(context, dict):
+            return context
+
         for k, v in context.iteritems():
             if not (
                 isinstance(v, (bool, int, long, float, str, unicode, list, tuple, dict,))
@@ -584,7 +612,8 @@ class RobotController(object):
         self._intervention_trace_pub = intervention_trace_pub
 
     def start(self):
-        self.actions.init()
+        # self.actions.init()
+        pass
 
     def stop(self):
         pass
@@ -593,7 +622,7 @@ class RobotController(object):
         self._enabled = True
 
     def disable(self):
-        self._disabled = False
+        self._enabled = False
 
     def _update_intervention_trace(self, action_type, **kwargs):
         # We only update the intervention trace because the execution trace is
@@ -607,116 +636,145 @@ class RobotController(object):
         trace_msg.action_metadata.args = pickle.dumps(kwargs)
         self._intervention_trace_pub.publish(trace_msg)
 
+    @enabled_check
     def noop(self):
         pass
 
+    @enabled_check
     def look_up(self):
         self.actions.look_pan_tilt(tilt_amount=-RobotController.LOOK_TILT_STEP)
         self._update_intervention_trace(InterventionActionMetadata.LOOK_UP)
 
+    @enabled_check
     def look_down(self):
         self.actions.look_pan_tilt(tilt_amount=RobotController.LOOK_TILT_STEP)
         self._update_intervention_trace(InterventionActionMetadata.LOOK_DOWN)
 
+    @enabled_check
     def look_left(self):
         self.actions.look_pan_tilt(pan_amount=RobotController.LOOK_PAN_STEP)
         self._update_intervention_trace(InterventionActionMetadata.LOOK_LEFT)
 
+    @enabled_check
     def look_right(self):
         self.actions.look_pan_tilt(pan_amount=-RobotController.LOOK_PAN_STEP)
         self._update_intervention_trace(InterventionActionMetadata.LOOK_RIGHT)
 
+    @enabled_check
     def move_forward(self):
         self.actions.move_planar(linear_amount=RobotController.MOVE_LINEAR_STEP)
         self._update_intervention_trace(InterventionActionMetadata.MOVE_FORWARD)
 
+    @enabled_check
     def move_backward(self):
         self.actions.move_planar(linear_amount=-RobotController.MOVE_LINEAR_STEP)
         self._update_intervention_trace(InterventionActionMetadata.MOVE_BACKWARD)
 
+    @enabled_check
     def move_left(self):
         self.actions.move_planar(angular_amount=RobotController.MOVE_ANGULAR_STEP)
         self._update_intervention_trace(InterventionActionMetadata.MOVE_LEFT)
 
+    @enabled_check
     def move_right(self):
         self.actions.move_planar(angular_amount=-RobotController.MOVE_ANGULAR_STEP)
         self._update_intervention_trace(InterventionActionMetadata.MOVE_RIGHT)
 
+    @enabled_check
     def torso_up(self):
         self.actions.torso_linear(amount=RobotController.TORSO_STEP)
         self._update_intervention_trace(InterventionActionMetadata.TORSO_UP)
 
+    @enabled_check
     def torso_down(self):
         self.actions.torso_linear(amount=-RobotController.TORSO_STEP)
         self._update_intervention_trace(InterventionActionMetadata.TORSO_DOWN)
 
+    @enabled_check
     def arm_linear_up(self):
         self.actions.arm_cartesian(linear_amount=[0, 0, RobotController.ARM_LINEAR_STEP])
         self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_UP)
 
+    @enabled_check
     def arm_linear_down(self):
         self.actions.arm_cartesian(linear_amount=[0, 0, -RobotController.ARM_LINEAR_STEP])
         self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_DOWN)
 
+    @enabled_check
     def arm_linear_left(self):
         self.actions.arm_cartesian(linear_amount=[0, -RobotController.ARM_LINEAR_STEP, 0])
         self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_LEFT)
 
+    @enabled_check
     def arm_linear_right(self):
         self.actions.arm_cartesian(linear_amount=[0, RobotController.ARM_LINEAR_STEP, 0])
         self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_RIGHT)
 
+    @enabled_check
     def arm_linear_forward(self):
         self.actions.arm_cartesian(linear_amount=[RobotController.ARM_LINEAR_STEP, 0, 0])
         self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_FORWARD)
 
+    @enabled_check
     def arm_linear_backward(self):
         self.actions.arm_cartesian(linear_amount=[-RobotController.ARM_LINEAR_STEP, 0, 0])
         self._update_intervention_trace(InterventionActionMetadata.ARM_LINEAR_BACKWARD)
 
+    @enabled_check
     def arm_angular_roll_left(self):
         self.actions.arm_cartesian(angular_amount=[RobotController.ARM_ANGULAR_STEP, 0, 0])
         self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_ROLL_LEFT)
 
+    @enabled_check
     def arm_angular_roll_right(self):
         self.actions.arm_cartesian(angular_amount=[-RobotController.ARM_ANGULAR_STEP, 0, 0])
         self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_ROLL_RIGHT)
 
+    @enabled_check
     def arm_angular_pitch_down(self):
         self.actions.arm_cartesian(angular_amount=[0, RobotController.ARM_ANGULAR_STEP, 0])
         self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_PITCH_DOWN)
 
+    @enabled_check
     def arm_angular_pitch_up(self):
         self.actions.arm_cartesian(angular_amount=[0, -RobotController.ARM_ANGULAR_STEP, 0])
         self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_PITCH_UP)
 
+    @enabled_check
     def arm_angular_yaw_left(self):
         self.actions.arm_cartesian(angular_amount=[0, 0, RobotController.ARM_ANGULAR_STEP])
         self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_YAW_LEFT)
 
+    @enabled_check
     def arm_angular_yaw_right(self):
         self.actions.arm_cartesian(angular_amount=[0, 0, -RobotController.ARM_ANGULAR_STEP])
         self._update_intervention_trace(InterventionActionMetadata.ARM_ANGULAR_YAW_RIGHT)
 
+    @enabled_check
     def arm_position_tuck(self):
         self.arm_position('tuck')
 
+    @enabled_check
     def arm_position_ready(self):
         self.arm_position('ready')
 
+    @enabled_check
     def arm_position(self, position):
         assert position in ["tuck", "ready"], "Unknown position: {}".format(position)
         self.actions.arm(poses="joint_poses.{}".format(position))
         self._update_intervention_trace(InterventionActionMetadata.ARM_POSITION, position=position)
 
+    @enabled_check
     def crop_image(self):
         self.noop()
         self._update_intervention_trace(InterventionActionMetadata.CROP_IMAGE)
 
+    @enabled_check
     def segment_image(self):
         self.noop()
         self._update_intervention_trace(InterventionActionMetadata.SEGMENT_IMAGE)
 
+    @enabled_check
     def update_beliefs(self, beliefs):
         assert len(beliefs) == 1 and beliefs.keys()[0] in [
             BeliefKeys.DOOR_1_OPEN, BeliefKeys.CUBE_AT_PICKUP_1, BeliefKeys.CUBE_AT_DROPOFF
