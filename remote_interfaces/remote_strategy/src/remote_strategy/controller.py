@@ -423,10 +423,22 @@ class RemoteController(object):
             name = 'hypothesis_{}'.format(idx)
 
             self._app.callback(
+                dash.dependencies.Output('{}_select'.format(name), 'value'),
+                [dash.dependencies.Input('enable-component', 'n_clicks')],
+                [dash.dependencies.State('{}_select'.format(name), 'value')]
+            )(self._define_hypothesis_reset_callback())
+
+            self._app.callback(
                 dash.dependencies.Output('{}_value'.format(name), 'value'),
                 [dash.dependencies.Input('{}_select'.format(name), 'value')],
                 [dash.dependencies.State('{}_value'.format(name), 'value')]
             )(self._define_hypothesis_selected_callback())
+
+        self._app.callback(
+            dash.dependencies.Output('hypotheses_certain_select', 'values'),
+            [dash.dependencies.Input('enable-component', 'n_clicks')],
+            [dash.dependencies.State('hypotheses_certain_select', 'values')]
+        )(self._define_hypotheses_certain_reset_callback())
 
         self._app.callback(
             dash.dependencies.Output('hypotheses_certain_value', 'values'),
@@ -491,6 +503,11 @@ class RemoteController(object):
             return True
         return completion_button
 
+    def _define_hypothesis_reset_callback(self):
+        def hypothesis_reset(n_clicks, current_hypothesis):
+            return current_hypothesis if self._current_error is not None else None
+        return hypothesis_reset
+
     def _define_hypothesis_selected_callback(self):
         def hypothesis_selected(hypothesis, old_hypothesis):
             if self._current_error is not None:
@@ -499,8 +516,9 @@ class RemoteController(object):
                         hypothesis,
                         InterventionHypothesisMetadata.SUSPECTED
                     )
-                else:  # Hypothesis has been removed as a candidate
-                    assert old_hypothesis is not None, "Both hypothesis and old_hypothesis are None"
+
+                # Hypothesis has been removed as a candidate
+                if old_hypothesis is not None:
                     self._send_hypothesis_event(
                         old_hypothesis,
                         InterventionHypothesisMetadata.ABSENT
@@ -508,6 +526,11 @@ class RemoteController(object):
 
             return hypothesis
         return hypothesis_selected
+
+    def _define_hypotheses_certain_reset_callback(self):
+        def hypotheses_certain_reset(n_clicks, current_certain_idx):
+            return current_certain_idx if self._current_error is not None else []
+        return hypotheses_certain_reset
 
     def _define_hypotheses_certain_callback(self):
         def hypotheses_certain(certain_idx, old_certain_idx, *hypotheses):
@@ -612,8 +635,7 @@ class RobotController(object):
         self._intervention_trace_pub = intervention_trace_pub
 
     def start(self):
-        # self.actions.init()
-        pass
+        self.actions.init()
 
     def stop(self):
         pass
