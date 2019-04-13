@@ -1,6 +1,6 @@
 - git:
-    local-name: assistance-arbitration
-    uri: git@github.com:GT-RAIL/assistance-arbitration.git
+    local-name: assistance_arbitration
+    uri: git@github.com:GT-RAIL/assistance_arbitration.git
     version: master
 - git:
     local-name: fetch_demos
@@ -9,12 +9,11 @@
 - git:
     local-name: fetch_gazebo
     uri: git@github.com:GT-RAIL/fetch_gazebo.git
-    version: gazebo2
+    version: banerjs/assistance-arbitration
 - git:
     local-name: fetch_grasp_suggestion
-    uri: git@github.com:gt-rail-internal/codebase.git
-    subfolder: davidkent/ROS/indigo/fetch_grasp_suggestion
-    version: master
+    uri: git@github.com:GT-RAIL/fetch_grasp_suggestion.git
+    version: indigo-devel
 - git:
     local-name: fetch_ros
     uri: git@github.com:GT-RAIL/fetch_ros.git
@@ -30,16 +29,15 @@
 - git:
     local-name: rail_grasp_calculation
     uri: git@github.com:GT-RAIL/rail_grasp_calculation.git
-    version: indigo-master
+    version: indigo-devel
 - git:
     local-name: rail_manipulation_msgs
     uri: git@github.com:GT-RAIL/rail_manipulation_msgs.git
     version: develop
 - git:
     local-name: rail_object_detection_msgs
-    uri: git@github.com:GT-RAIL/rail_object_detection.git
-    subfolder: rail_object_detection_msgs
-    version: develop
+    uri: git@github.com:gt-rail-release/rail_object_detection-release.git
+    version: release/indigo/rail_object_detection_msgs/3.0.2-0
 - git:
     local-name: rail_people_detection
     uri: git@github.com:GT-RAIL/rail_people_detection.git
@@ -48,3 +46,7 @@
     local-name: rail_segmentation
     uri: git@github.com:GT-RAIL/rail_segmentation.git
     version: develop
+- git:
+    local-name: rosprofiler
+    uri: git@github.com:banerjs/rosprofiler.git
+    version: master
