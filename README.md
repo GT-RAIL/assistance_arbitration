@@ -10,9 +10,9 @@ Modules:
 - [`local_interfaces`](local_interfaces/) - If we decide to solicit help from a local person, then the code in this folder (main entrypoint: [`local_interfaces/local_strategy`](local_interfaces/local_strategy)) handles the presentation of the request to a human.
 - [`remote_interfaces`](remote_interfaces/) - If we decide to solicit help from a remote person, then the code in this folder (main entrypoint: [`remote_interfaces/remote_strategy`](remote_interfaces/remote_strategy)) handles the presentation of the request to a human.
 
-Installation (TODO):
+Installation:
 
-- [`install`](install/) - `rosinstall` files to setup and synchronize the different workspaces. However, we cannot use the default `wstool` for this. Also includes `requirements.txt` (TODO), etc.
+- [`install`](install/) - `rosinstall` files to setup and synchronize the different workspaces. Also includes `requirements.txt`.
 
 
 ## Prerequisites
@@ -20,31 +20,44 @@ Installation (TODO):
 The code in this repository requires the installation of the following prerequisites:
 
 ```yaml
-# Prerequisites installed with `pip install <>`
+# Python prerequisites. You can use the requirements.txt in `install/`
 pip:
+- dash
+- joblib
+- matplotlib
+- networkx
+- numpy
 - psutil
 - pydub
+- plotly
+- requests
+- ruamel.yaml
+- sklearn
+- treeinterpreter
+- wstool
 
-# Prerequisite for tts. Instructions are in the speech_interface package in this repository
+# Recommended prerequisite for tts. Instructions are in the speech_interface package in this repository
+docker:
+- gtrail/marytts:dfki-prudence-hsmm
+
+# (Optional) Prerequisite for tts. Instructions are in the speech_interface package in this repository
 java:
 - marytts
 
-# Prerequisite packages. Ensure these are in your ROS workspace
-ros:
+# Prerequisite packages. Ensure these are in your ROS workspace. You can use the rosinstall files in `install/`
+catkin:
 - GT-RAIL/fetch_demos
 - GT-RAIL/fetch_gazebo
-- gt-rail-internal/fetch_grasp_suggestion  # Expect a public release from Fetch soon
+- GT-RAIL/fetch_grasp_suggestion
 - GT-RAIL/fetch_ros
 - HLP-R/hlpr_speech
 - GT-RAIL/rail_agile
 - GT-RAIL/rail_grasp_calculation
 - GT-RAIL/rail_manipulation_msgs
-- GT-RAIL/rail_object_detection  # Only really need the msgs from here
+- GT-RAIL/rail_object_detection_msgs
 - GT-RAIL/rail_people_detection
 - GT-RAIL/rail_segmentation
 ```
-
-In the near future, these will be packaged into a script(s) placed in the `install` directory.
 
 
 ## Quickstart
