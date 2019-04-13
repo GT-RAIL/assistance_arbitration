@@ -89,6 +89,7 @@ class Tracer(object):
         'diagnostics_update: wrist_roll_mcb',
         'task_action_recv_result',
         'task_action_send_goal',
+        'task_action_cancel',
         'task_service_called',
         'task_topic_message',
         'task_topic_published',
