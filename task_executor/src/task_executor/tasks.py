@@ -29,6 +29,9 @@ class TaskContext(object):
         self.start_idx = start_idx
         self.restart_child = restart_child
 
+    def __str__(self):
+        return "({}, {})".format(self.start_idx, self.restart_child)
+
 
 # The actual executor of tasks
 
@@ -154,7 +157,8 @@ class Task(AbstractStep):
                     child_context = None
                     if self.current_executor is not None \
                             and isinstance(self.current_executor, Task) \
-                            and not context.restart_child:
+                            and not context.restart_child \
+                            and context.start_idx == self.step_idx:
                         # Restart the child if it ends in an operation
                         child_context = TaskContext(
                             start_idx=self.current_executor.step_idx,
@@ -162,7 +166,8 @@ class Task(AbstractStep):
                         )
                     else:
                         # restart_child or current_executor is None or
-                        # current_executor is not of type Task
+                        # current_executor is not of type Task or
+                        # current_executor is the previous task in the program
                         child_context = TaskContext()
 
                     # Set the current_executor to the task at hand
