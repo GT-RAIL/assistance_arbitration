@@ -489,14 +489,14 @@ class RemoteController(object):
 
     def _define_action_button_callback(self, button_id, button_cb):
         def action_button(n_clicks):
-            if self._current_error is not None:
+            if self._current_error is not None and n_clicks is not None:
                 button_cb()
             return True
         return action_button
 
     def _define_completion_button_callback(self, button_id, resume_hint):
         def completion_button(n_clicks):
-            if self._current_error is not None:
+            if self._current_error is not None and n_clicks is not None:
                 assert self._current_response is None, "Current Response: {}".format(self._current_response)
                 self._current_response = RequestAssistanceResult(resume_hint=resume_hint)
                 self._complete_intervention_srv()
