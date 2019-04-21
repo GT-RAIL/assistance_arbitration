@@ -3,10 +3,14 @@
 
 from __future__ import print_function, division
 
+import os
 import collections
 import numpy as np
 
+from ruamel.yaml import YAML
+
 import rospy
+import rospkg
 
 from actionlib_msgs.msg import GoalStatus
 from assistance_msgs.msg import (ExecutionEvent, TaskStepMetadata,
@@ -14,6 +18,9 @@ from assistance_msgs.msg import (ExecutionEvent, TaskStepMetadata,
 
 
 # Helper functions and classes
+
+yaml = YAML(typ='safe')
+
 
 class classproperty(property):
     def __get__(self, cls, owner):
@@ -98,18 +105,6 @@ class Tracer(object):
 
     # Events to include. These are a list because they need to be ordered
     INCLUDE_BELIEF_EVENTS = [
-        BeliefKeys.ARM_AT_READY,
-        BeliefKeys.ARM_AT_STOW,
-        BeliefKeys.ARM_AT_TUCK,
-        BeliefKeys.CUBE_AT_DROPOFF,
-        BeliefKeys.CUBE_AT_PICKUP_1,
-        BeliefKeys.DOOR_1_OPEN,
-        BeliefKeys.GRIPPER_FULLY_CLOSED,
-        BeliefKeys.GRIPPER_HAS_OBJECT,
-        BeliefKeys.TORSO_RAISED,
-        BeliefKeys.ROBOT_AT_PICKUP_1,
-        BeliefKeys.ROBOT_AT_DOOR_1,
-        BeliefKeys.ROBOT_AT_DROPOFF,
     ]
     INCLUDE_MONITOR_EVENTS = [
         'arm_contact_update',
@@ -162,49 +157,19 @@ class Tracer(object):
         # 'diagnostics_update: wrist_roll_mcb',
     ]
     INCLUDE_TASK_STEP_EVENTS = [
-        'approach',
-        'arm',
-        'arm_cartesian',
-        'arm_place',
-        'beep',
-        'check_obstacle_in_front',
-        'choose_and_traverse_door',
-        'choose_first_true_belief',
-        'depart',
-        'detach_objects',
-        'easy',
-        'easy_bracket',
-        'find_grasps',
-        'find_object',
-        'gripper',
-        'hard',
-        'hard_bracket',
-        'look',
-        'look_pan_tilt',
-        'look_at_gripper_arm',
-        'look_look_at_gripper',
-        'move',
-        'move_planar',
-        'perceive',
-        'perceive_and_pick',
-        'pick',
-        'pick_task',
-        'place',
-        'place_task',
-        'reset_arm',
-        'setup',
-        'speak',
-        'torso',
-        'torso_linear',
-        'traverse_doorway',
-        'traverse_doorways',
-        'update_beliefs',
-        'wait',
     ]
+    DEFAULT_TASK_DEFINTIONS_FILE = os.path.join(
+        rospkg.RosPack().get_path('task_executor'),
+        'config', 'tasks.yaml'
+    )
 
     # This is a vector, used to index into rows
     _trace_types = None
     _trace_types_idx = None
+
+    # Flags for generating the vector of trace types
+    AUTO_INCLUDE_BELIEF_EVENTS = True
+    AUTO_INCLUDE_TASK_EVENTS = True
 
     def __init__(self, start_time=None):
         start_time = start_time or rospy.Time.now()
@@ -230,6 +195,35 @@ class Tracer(object):
     @classproperty
     def trace_types(cls):
         if cls._trace_types is None:
+            # Auto generate the belief events if the flag is set
+            if cls.AUTO_INCLUDE_BELIEF_EVENTS:
+                cls.INCLUDE_BELIEF_EVENTS += [
+                    getattr(BeliefKeys, x) for x in sorted(dir(BeliefKeys))
+                    if (
+                        x.isupper()
+                        and getattr(BeliefKeys, x) not in cls.EXCLUDE_BELIEF_EVENTS
+                        and getattr(BeliefKeys, x) not in cls.INCLUDE_BELIEF_EVENTS
+                    )
+                ]
+
+            # Auto generate task events if the flag is set
+            if cls.AUTO_INCLUDE_TASK_EVENTS:
+
+                # First fetch all the defined actions
+                from task_executor.actions import default_actions_dict
+                actions = list(default_actions_dict.keys())
+
+                # Then fetch all the defined tasks
+                with open(Tracer.DEFAULT_TASK_DEFINTIONS_FILE, 'r') as fd:
+                    definitions = yaml.load(fd)
+                    tasks = list(definitions['tasks'].keys())
+
+                # Finally, create the list of events to include
+                cls.INCLUDE_TASK_STEP_EVENTS += [
+                    x for x in sorted(actions + tasks)
+                    if (x not in cls.EXCLUDE_TASK_STEP_EVENTS and x not in cls.INCLUDE_TASK_STEP_EVENTS)
+                ]
+
             cls._trace_types = (
                 [(Tracer.TIME_EVENT, 'time')]
                 + [(ExecutionEvent.BELIEF_EVENT, name) for name in cls.INCLUDE_BELIEF_EVENTS]
