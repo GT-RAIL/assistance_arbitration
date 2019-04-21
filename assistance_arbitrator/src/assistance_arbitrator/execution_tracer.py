@@ -104,8 +104,7 @@ class Tracer(object):
     EXCLUDE_TASK_STEP_EVENTS = set([])
 
     # Events to include. These are a list because they need to be ordered
-    INCLUDE_BELIEF_EVENTS = [
-    ]
+    INCLUDE_BELIEF_EVENTS = []
     INCLUDE_MONITOR_EVENTS = [
         'arm_contact_update',
         'base_collision_update',
@@ -156,8 +155,8 @@ class Tracer(object):
         # 'diagnostics_update: wrist_flex_mcb',
         # 'diagnostics_update: wrist_roll_mcb',
     ]
-    INCLUDE_TASK_STEP_EVENTS = [
-    ]
+    INCLUDE_TASK_STEP_EVENTS = []
+    UNKNOWN_TASK_NAME = '<unknown>'
     DEFAULT_TASK_DEFINTIONS_FILE = os.path.join(
         rospkg.RosPack().get_path('task_executor'),
         'config', 'tasks.yaml'
@@ -167,9 +166,10 @@ class Tracer(object):
     _trace_types = None
     _trace_types_idx = None
 
-    # Flags for generating the vector of trace types
+    # Flags for generating and operating on the vector of trace types
     AUTO_INCLUDE_BELIEF_EVENTS = True
     AUTO_INCLUDE_TASK_EVENTS = True
+    INCLUDE_UNKNOWN_TASK_EVENTS = True
 
     def __init__(self, start_time=None):
         start_time = start_time or rospy.Time.now()
@@ -212,6 +212,7 @@ class Tracer(object):
                 # First fetch all the defined actions
                 from task_executor.actions import default_actions_dict
                 actions = list(default_actions_dict.keys())
+                del default_actions_dict
 
                 # Then fetch all the defined tasks
                 with open(Tracer.DEFAULT_TASK_DEFINTIONS_FILE, 'r') as fd:
@@ -230,6 +231,13 @@ class Tracer(object):
                 + [(ExecutionEvent.MONITOR_EVENT, name) for name in cls.INCLUDE_MONITOR_EVENTS]
                 + [(ExecutionEvent.TASK_STEP_EVENT, name) for name in cls.INCLUDE_TASK_STEP_EVENTS]
             )
+
+            # If unknown task events should be included (which includes the
+            # excluded events), then create a placeholder for them
+            if cls.INCLUDE_UNKNOWN_TASK_EVENTS:
+                cls._trace_types.append(
+                    (ExecutionEvent.TASK_STEP_EVENT, Tracer.UNKNOWN_TASK_NAME)
+                )
 
         return cls._trace_types
 
@@ -297,14 +305,22 @@ class Tracer(object):
         if msg.name in Tracer.EXCLUDE_MONITOR_EVENTS and msg.type == ExecutionEvent.MONITOR_EVENT:
             return True
 
-        if msg.name in Tracer.EXCLUDE_TASK_STEP_EVENTS and msg.type == ExecutionEvent.TASK_STEP_EVENT:
+        # Excluded task events are counted as unknowns
+        if not Tracer.INCLUDE_UNKNOWN_TASK_EVENTS \
+                and msg.name in Tracer.EXCLUDE_TASK_STEP_EVENTS \
+                and msg.type == ExecutionEvent.TASK_STEP_EVENT:
             return True
 
         # Warn if there is an event that isn't a known trace type
         if (msg.type, msg.name) not in Tracer.trace_types:
-            rospy.logwarn("Unknown event {} ({})"
-                          .format(msg.name, get_event_name(msg.type)))
-            return True
+            # Check that this is not an unknown task we should in fact include
+            if not (
+                msg.type == ExecutionEvent.TASK_STEP_EVENT
+                and Tracer.INCLUDE_UNKNOWN_TASK_EVENTS
+            ):
+                rospy.logwarn("Unknown event {} ({})"
+                              .format(msg.name, get_event_name(msg.type)))
+                return True
 
         # All is well, include in the trace
         return False
@@ -313,6 +329,13 @@ class Tracer(object):
         """As messages come in, update the trace"""
         if self.exclude_from_trace(msg):
             return
+
+        # If this is an unknown task and we need to keep track of unknown tasks,
+        # then modify the message and keep track of the event
+        if msg.type == ExecutionEvent.TASK_STEP_EVENT \
+                and (msg.type, msg.name) not in Tracer.trace_types \
+                and Tracer.INCLUDE_UNKNOWN_TASK_EVENTS:
+            msg.name = Tracer.UNKNOWN_TASK_NAME
 
         # Append to the full trace
         num_events = self.num_events  # Keep track of the old num_events
