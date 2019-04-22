@@ -13,7 +13,19 @@ from assistance_msgs.msg import (RequestAssistanceActionGoal,
                                  InterventionHypothesisMetadata,
                                  InterventionActionMetadata)
 
-from assistance_arbitrator.execution_tracer import Tracer as ExecutionTracer
+from assistance_arbitrator.execution_tracer import (Tracer as ExecutionTracer,
+                                                    classproperty)
+
+# Import isolation
+try:
+    import isolation
+except ImportError as e:
+    sys.path.append('/home/banerjs/Libraries/RAIL/codebase/banerjs/isolation/models')
+    import isolation
+from isolation.data.annotations import Annotations
+
+
+# Helper functions and classes
 
 
 # The tracer class
@@ -30,6 +42,8 @@ class Tracer(object):
 
     # Stub event type definition
     TIME_EVENT = ExecutionTracer.TIME_EVENT
+
+    # The expected events to appear on this stream
 
     def __init__(self, start_time=None):
         start_time = start_time or rospy.Time.now()
