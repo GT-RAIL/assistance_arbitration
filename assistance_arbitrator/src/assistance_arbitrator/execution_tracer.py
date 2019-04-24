@@ -129,7 +129,7 @@ class Tracer(object):
     ]
     INCLUDE_TASK_STEP_EVENTS = []
     UNKNOWN_TASK_NAME = '<unknown>'
-    DEFAULT_TASK_DEFINTIONS_FILE = os.path.join(
+    DEFAULT_TASK_DEFINITIONS_FILE = os.path.join(
         rospkg.RosPack().get_path('task_executor'),
         'config', 'tasks.yaml'
     )
@@ -187,7 +187,7 @@ class Tracer(object):
                 del default_actions_dict
 
                 # Then fetch all the defined tasks
-                with open(Tracer.DEFAULT_TASK_DEFINTIONS_FILE, 'r') as fd:
+                with open(Tracer.DEFAULT_TASK_DEFINITIONS_FILE, 'r') as fd:
                     definitions = yaml.load(fd)
                     tasks = list(definitions['tasks'].keys())
 

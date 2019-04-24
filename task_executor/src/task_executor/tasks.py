@@ -30,7 +30,7 @@ class TaskContext(object):
         self.restart_child = restart_child
 
     def __str__(self):
-        return "({}, {})".format(self.start_idx, self.restart_child)
+        return "(Start: {}, Restart: {})".format(self.start_idx, self.restart_child)
 
 
 # The actual executor of tasks
