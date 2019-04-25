@@ -81,7 +81,7 @@ def _create_no_fault_worlds():
                         # no-fault option
                         world_options = {}
                         for option, attr in Annotations.ANNOTATIONS_ATTR_MAP.iteritems():
-                            if option in set(['task', 'result_annotation']):
+                            if option in set(['task', 'result_annotation', 'gazebo_issue']):
                                 continue
 
                             attr = getattr(Annotations, attr)
@@ -117,7 +117,7 @@ def _check_options_valid(run_options):
         return False
 
     for option in Annotations.ANNOTATIONS_ATTR_MAP.iterkeys():
-        if option in set(['task', 'result_annotation']):
+        if option in set(['task', 'result_annotation', 'gazebo_issue']):
             continue
 
         if option not in run_options:
@@ -206,7 +206,7 @@ def main(injection_options, allow_fault_free, single_fault, debug):
             attr = getattr(Annotations, attr)
 
             # Ignore the task and result keys
-            if option in set(['task', 'result_annotation']):
+            if option in set(['task', 'result_annotation', 'gazebo_issue']):
                 continue
 
             # For each of the randomization sets, inject the fault if the option
