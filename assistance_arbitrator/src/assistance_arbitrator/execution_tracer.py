@@ -34,7 +34,7 @@ EVENT_SIGNATURES = {
     ExecutionEvent.BELIEF_EVENT: 'BELIEF',
 }
 
-def get_event_name(event_signature):
+def get_event_type(event_signature):
     global EVENT_SIGNATURES
     return EVENT_SIGNATURES.get(event_signature, event_signature)
 
@@ -299,7 +299,7 @@ class Tracer(object):
                 and Tracer.INCLUDE_UNKNOWN_TASK_EVENTS
             ):
                 rospy.logwarn("Unknown event {} ({})"
-                              .format(msg.name, get_event_name(msg.type)))
+                              .format(msg.name, get_event_type(msg.type)))
                 return True
 
         # All is well, include in the trace
@@ -358,7 +358,7 @@ class Tracer(object):
 
     def _get_parsed_trace_from_event(self, event):
         parsed_event = { 'time': event.stamp.to_time(),
-                         'type': get_event_name(event.type),
+                         'type': get_event_type(event.type),
                          'name': event.name, }
 
         if event.type == ExecutionEvent.BELIEF_EVENT:
