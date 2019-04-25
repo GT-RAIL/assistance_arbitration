@@ -31,15 +31,15 @@ from isolation.data.annotations import Annotations
 
 EVENT_TYPE_DICT = {
     InterventionEvent.START_OR_END_EVENT: {
-        InterventionStartEndMetadata.START: 'START',
-        InterventionStartEndMetadata.END: 'END',
+        InterventionStartEndMetadata.START: 'INT_START',
+        InterventionStartEndMetadata.END: 'INT_END',
     },
     InterventionEvent.HYPOTHESIS_EVENT: {
         InterventionHypothesisMetadata.ABSENT: 'HYP_ABSENT',
         InterventionHypothesisMetadata.SUSPECTED: 'HYP_SUSPECTED',
         InterventionHypothesisMetadata.CONFIRMED: 'HYP_CONFIRMED',
     },
-    InterventionEvent.ACTION_EVENT: 'ACTION',
+    InterventionEvent.ACTION_EVENT: 'INT_ACTION',
 }
 
 def get_event_type(event):
