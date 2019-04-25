@@ -27,23 +27,27 @@ class classproperty(property):
         return classmethod(self.fget).__get__(None, owner)()
 
 
-def get_event_name(event_signature):
-    signatures = {
-        ExecutionEvent.TASK_STEP_EVENT: 'TASK_STEP',
-        ExecutionEvent.ROSGRAPH_EVENT: 'ROSGRAPH',
-        ExecutionEvent.MONITOR_EVENT: 'MONITOR',
-        ExecutionEvent.BELIEF_EVENT: 'BELIEF',
-    }
-    return signatures.get(event_signature, event_signature)
+EVENT_SIGNATURES = {
+    ExecutionEvent.TASK_STEP_EVENT: 'TASK_STEP',
+    ExecutionEvent.ROSGRAPH_EVENT: 'ROSGRAPH',
+    ExecutionEvent.MONITOR_EVENT: 'MONITOR',
+    ExecutionEvent.BELIEF_EVENT: 'BELIEF',
+}
 
+def get_event_name(event_signature):
+    global EVENT_SIGNATURES
+    return EVENT_SIGNATURES.get(event_signature, event_signature)
+
+
+EVENT_STATUSES = {
+    GoalStatus.ACTIVE: 0,
+    GoalStatus.SUCCEEDED: 1,
+    GoalStatus.ABORTED: -1,
+}
 
 def discretize_task_step_status(status):
-    statuses = {
-        GoalStatus.ACTIVE: 0,
-        GoalStatus.SUCCEEDED: 1,
-        GoalStatus.ABORTED: -1,
-    }
-    return statuses.get(status, np.nan)
+    global EVENT_STATUSES
+    return EVENT_STATUSES.get(status, np.nan)
 
 
 # The tracer object that collects the trace
@@ -143,11 +147,13 @@ class Tracer(object):
     AUTO_INCLUDE_TASK_EVENTS = True
     INCLUDE_UNKNOWN_TASK_EVENTS = True
 
-    def __init__(self, start_time=None):
+    def __init__(self, start_time=None, create_parsed_events=False):
         start_time = start_time or rospy.Time.now()
+        self._create_parsed_events = create_parsed_events
 
         # Book-keeping variables to keep track of the trace state
         self.full_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
+        self.parsed_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
         self._trace = np.ones((len(Tracer.trace_types), Tracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan
         self._should_trace = False  # Variable that determines whether to trace
 
@@ -254,6 +260,8 @@ class Tracer(object):
         """Initialize the first trace event"""
         event = ExecutionEvent(stamp=start_time)
         self.full_trace.append(event)
+        if self._create_parsed_events:
+            self.parsed_trace.append(self._get_parsed_trace_from_event(event))
 
         self._trace[0, 0] = start_time.to_time()
         for idx, trace_spec in enumerate(Tracer.trace_types):
@@ -312,6 +320,8 @@ class Tracer(object):
         # Append to the full trace
         num_events = self.num_events  # Keep track of the old num_events
         self.full_trace.append(msg)
+        if self._create_parsed_events:
+            self.parsed_trace.append(self._get_parsed_trace_from_event(msg))
 
         # Copy over the previous time-step's trace. Also recycle if the trace
         # is too long
@@ -345,3 +355,19 @@ class Tracer(object):
         else:
             raise Exception("Unrecognized event {} of type {}"
                             .format(msg.name, msg.type))
+
+    def _get_parsed_trace_from_event(self, event):
+        parsed_event = { 'time': event.stamp.to_time(),
+                         'type': get_event_name(event.type),
+                         'name': event.name, }
+
+        if event.type == ExecutionEvent.BELIEF_EVENT:
+            parsed_event['value'] = event.belief_metadata.value
+        elif event.type == ExecutionEvent.MONITOR_EVENT:
+            parsed_event['value'] = event.monitor_metadata.fault_status
+        elif event.type == ExecutionEvent.TASK_STEP_EVENT:
+            parsed_event['value'] = discretize_task_step_status(event.task_step_metadata.status)
+        else:
+            parsed_event['type'] = parsed_event['name'] = parsed_event['value'] = None
+
+        return parsed_event
