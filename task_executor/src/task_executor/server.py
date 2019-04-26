@@ -20,15 +20,49 @@ from assistance_msgs.msg import (RequestAssistanceAction, RequestAssistanceGoal,
 from std_srvs.srv import Trigger, TriggerResponse
 
 
+# Helper function for debugging
+
+def _pprint_variables(variables):
+    """
+    Helper function to pretty print the variable context that is returned from
+    the tasks that are running. Basically stub out all objects that are not
+    basic python types
+    """
+    if isinstance(variables, dict):
+        pp_var = {}
+        for k, v in variables.iteritems():
+            if isinstance(v, (list, tuple, dict,)):
+                pp_var[k] = _pprint_variables(v)
+            elif isinstance(v, (bool, int, long, float, str, unicode)):
+                pp_var[k] = v
+            else:
+                pp_var[k] = type(v)
+
+    elif isinstance(variables, (list, tuple,)):
+        pp_var = []
+        for x in variables:
+            if isinstance(x, (list, tuple, dict,)):
+                pp_var.append(_pprint_variables(x))
+            elif isinstance(v, (bool, int, long, float, str, unicode)):
+                pp_var.append(x)
+            else:
+                pp_var.append(type(x))
+
+    return pp_var
+
+
 # The actual action server to execute the tasks
 
 class TaskServer(object):
     """
-    Given the task to perform, this server yields control to sub clients. When
-    the clients are done, it moves on to the next task. If the task fails, the
-    server sends context to an arbitrator. The arbitrator yields control to a
-    recovery interface, which then returns a signal back up the stack to this
-    server with hints on how execution should proceed.
+    Exposes a :class:`actionlib.SimpleActionServer` in order to execute defined
+    :class:`task_executor.tasks.Task` instances.
+
+    Given the task to perform, this server yields control, at each step to,
+    sub-clients. When the clients are done, it moves on to the next step. If the
+    task fails, the server sends context to a task monitor. The monitor yields
+    control to a recovery interface, which then returns a signal back up the
+    stack to this server with hints on how execution should proceed.
     """
 
     ASSISTANCE_ARBITRATOR_ACTION_SERVER = "arbitrator"
@@ -93,7 +127,10 @@ class TaskServer(object):
 
     def execute(self, goal):
         """
-        Execute the given task name. Has a spec of ExecuteGoal.
+        The callback for a goal sent to the action server.
+
+        Args:
+            goal (task_execution_msgs/ExecuteGoal) : The task to execute
         """
         result = self._server.get_default_result()
         if goal.name not in self.tasks:
@@ -149,6 +186,19 @@ class TaskServer(object):
                     'exception': e
                 }
                 request_assistance = True
+
+            # If the task is about to fail, print out the context of the failure
+            # for debugging purposes
+            if request_assistance:
+                rospy.loginfo(
+                    """Task {name}: Will require assistance. Details:
+Component: {executor.name}
+Status: {executor.status}
+Context: {variables}""".format(
+                    name=task.name,
+                    executor=task.get_executor(),
+                    variables=_pprint_variables(variables)
+                ))
 
             # The value of request assistance depends on the arbitration client
             if request_assistance and self._arbitration_client is None:

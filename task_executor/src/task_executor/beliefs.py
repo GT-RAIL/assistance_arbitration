@@ -21,7 +21,7 @@ class BeliefsServer(object):
     """
     This server listens on the execution trace topic for updates to beliefs.
     When an update is sent out, it stores the result. A service call can later
-    fetch
+    fetch the desired belief value
     """
 
     EXECUTION_TRACE_TOPIC = '/execution_monitor/trace'

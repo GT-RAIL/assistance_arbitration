@@ -26,7 +26,7 @@ def assign(var_name, value, current_params, current_variables):
         var_name (str) : Name of the variable to assign the value to
         value (any) : Value to assign to that variable
     Returns:
-        A dictionary with { var_name: value }
+        A dictionary with :code:`{ var_name: value }`
     """
     return { var_name: value }
 
@@ -38,7 +38,7 @@ def decrement(var_name, current_params, current_variables):
     Args:
         var_name (str) : Name of the variable to decrement
     Returns:
-        A dictionary with the var_name value in current_variables decremented
+        A dictionary with :code:`{ var_name: var_name-1 }`
     """
     heap = _get_heap_for_var_name(var_name, current_variables, current_params)
     return { var_name: heap[var_name] - 1 }
@@ -51,7 +51,7 @@ def make_boolean(var_name, bool_name, current_params, current_variables):
         var_name (str) : Name of the variable to binarize
         bool_name (str) : Name of the binarized version of the variable
     Returns:
-        A dictionary with the { bool_name: bool(var_name) }
+        A dictionary with :code:`{ bool_name: bool(var_name) }`
     """
     heap = _get_heap_for_var_name(var_name, current_variables, current_params)
     return { bool_name: bool(heap[var_name]) }
@@ -63,8 +63,23 @@ def negate(var_name, negate_name, current_params, current_variables):
     Args:
         var_name (str) : Name of the variable to negate
         negate_name (str) : Name of the variable to contain the negation
-    REturns:
-        A dictionary with the { var_name: not var_name }
+    Returns:
+        A dictionary with :code:`{ negate_name: not var_name }`
     """
     heap = _get_heap_for_var_name(var_name, current_variables, current_params)
     return { negate_name: not heap[var_name] }
+
+def get_index(var_name, idx_name, idx, current_params, current_variables):
+    """
+    Assuming that var_name is an indexable array / dict, return the desired idx
+    from within the array
+
+    Args:
+        var_name (str): Name of the variable to get the index from
+        idx_name (str): Name of the output variable to contain the indexed item
+        idx (int, str): The desired index in var_name. Can be int or str
+    Returns:
+        A dictionary with :code:`{ idx_name: var_name[idx] }`
+    """
+    heap = _get_heap_for_var_name(var_name, current_variables, current_params)
+    return { idx_name: heap[var_name][idx] }

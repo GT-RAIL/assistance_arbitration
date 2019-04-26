@@ -11,6 +11,9 @@ from .arm import ArmAction
 
 
 class PlaceAction(AbstractStep):
+    """
+    Place the object that is in the gripper
+    """
 
     DROP_OBJECT_SERVICE_NAME = "/grasp_executor/drop_object"
     DROP_POSE_NAME = "gripper_poses.drop"  # This is from the poses database
@@ -33,6 +36,13 @@ class PlaceAction(AbstractStep):
         self._arm.init('arm_place')
 
     def run(self):
+        """
+        The run function for this step
+
+        .. seealso::
+
+            :meth:`task_executor.abstract_step.AbstractStep.run`
+        """
         rospy.loginfo("Action {}: Placing objects in hand".format(self.name))
         self._stopped = False
 

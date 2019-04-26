@@ -14,6 +14,10 @@ from task_executor.abstract_step import AbstractStep
 # The action definition
 
 class DetachObjectsAction(AbstractStep):
+    """
+    Detach objects from the robot within the planning scene. Useful if the task
+    state and scene state need to be reset.
+    """
 
     ARM_GROUP_NAME = "arm"
     PLANNING_SCENE_TOPIC = "/planning_scene"
@@ -28,6 +32,13 @@ class DetachObjectsAction(AbstractStep):
         self._scene = moveit_commander.PlanningSceneInterface()
 
     def run(self):
+        """
+        The run function for this step
+
+        .. seealso::
+
+            :meth:`task_executor.abstract_step.AbstractStep.run`
+        """
         rospy.loginfo("Action {}: Detaching objects from planner".format(self.name))
 
         # First detach all objects from the arm

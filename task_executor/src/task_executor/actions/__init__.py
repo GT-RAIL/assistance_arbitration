@@ -36,7 +36,13 @@ from .wait import WaitAction
 
 
 class Actions(object):
-    """Registry of actions"""
+    """
+    A registry of actions. It is recommended that you create this object with
+    :func:`get_default_actions`. In order to use the actions, they must be
+    intialized, which includes connecting to their action servers, services,
+    etc. You can use the :attr:`initialized` attribute of this object to know
+    if the actions are initialized or not.
+    """
 
     def __init__(self, registry):
         """
@@ -44,6 +50,9 @@ class Actions(object):
             registry (dict) : This is a dict of name -> Action class mappings
         """
         self.registry = { key: klass() for key, klass in registry.iteritems() }
+
+        # Flag for if the actions are initialized
+        self.initialized = False
 
         # Quick sanity check because I don't trust people. Also set the action
         # as an attribute for '.' based referencing
@@ -57,6 +66,9 @@ class Actions(object):
     def init(self):
         for key, action in self.registry.iteritems():
             action.init(key)
+
+        # Mark the actions as initialized
+        self.initialized = True
 
 
 # The default actions contain all the action interfaces that are known to this
@@ -93,4 +105,15 @@ default_actions_dict = {
 }
 
 def get_default_actions():
+    """
+    Provides a consistent manner of fetching all the actions that are available
+    on the robot. This is the preferred manner of getting the actions:
+
+    >>> actions = get_default_actions()
+    >>> move_params = { 'location': 'waypoints.origin' }
+    >>> actions.move(**move_params)
+
+    Returns:
+        (Actions) : The default registry of all the actions that are available
+    """
     return Actions(default_actions_dict)
