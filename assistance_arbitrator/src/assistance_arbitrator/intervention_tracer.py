@@ -71,12 +71,34 @@ class Tracer(object):
     """
 
     INTERVENTION_TRACE_TOPIC = '/intervention_monitor/trace'
-    MAX_TRACE_LENGTH = 9999
+    MAX_TRACE_LENGTH = 999
 
     # Stub event type definition
     TIME_EVENT = ExecutionTracer.TIME_EVENT
 
-    # The expected events to appear on this stream. TODO
+    # The expected events to appear on this stream. Most are autopopulated if
+    # AUTO_INCLUDE_* flags are turned on
+    EXCLUDE_HYPOTHESIS_EVENTS = set([])
+    INCLUDE_HYPOTHESIS_EVENTS = []
+
+    EXCLUDE_ACTION_EVENTS = set([])
+    INCLUDE_ACTION_EVENTS = []
+
+    EXCLUDE_START_EVENTS = set([])
+    INCLUDE_START_EVENTS = []
+
+    EXCLUDE_END_EVENTS = set([])
+    INCLUDE_END_EVENTS = []
+
+    # Flags to autopopulate the types of events to include or exclude
+    AUTO_INCLUDE_HYPOTHESIS_EVENTS = True   # Populated from Annotations
+    AUTO_INCLUDE_ACTION_EVENTS = True       # Populated from InterventionActionMetadata
+    AUTO_INCLUDE_START_EVENTS = True        # Populated from ExecutionTracer.INCLUDE_TASK_STEP_EVENTS
+    AUTO_INCLUDE_END_EVENTS = True          # Populated from RequestAssistanceResult
+
+    # Ultimately, from the above these classproperties are populated
+    _trace_types = None
+    _trace_types_idx = None
 
     def __init__(self, start_time=None, create_parsed_events=False):
         start_time = start_time or rospy.Time.now()
@@ -85,6 +107,7 @@ class Tracer(object):
         # Book-keeping variables to keep track of the intervention events
         self.full_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
         self.parsed_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
+        self._traces = []
         self._should_trace = False
 
         # Initialize the trace
@@ -96,6 +119,93 @@ class Tracer(object):
             InterventionEvent,
             self.update_trace
         )
+
+    @classproperty
+    def trace_types(cls):
+        if cls._trace_types is None:
+            # Auto generate the hypothesis events if the flag is set
+            if cls.AUTO_INCLUDE_HYPOTHESIS_EVENTS:
+                cls.INCLUDE_HYPOTHESIS_EVENTS += [
+                    x['value'] for x in Annotations.RESULT_OPTIONS[1:]
+                    if (
+                        x['value'] not in cls.EXCLUDE_HYPOTHESIS_EVENTS
+                        and x['value'] not in cls.INCLUDE_HYPOTHESIS_EVENTS
+                    )
+                ]
+
+            # Auto generate the action events if the flag is set
+            if cls.AUTO_INCLUDE_ACTION_EVENTS:
+                cls.INCLUDE_ACTION_EVENTS += [
+                    getattr(InterventionActionMetadata, x) for x in sorted(dir(InterventionActionMetadata))
+                    if (
+                        x.isupper()
+                        and getattr(InterventionActionMetadata, x) not in cls.EXCLUDE_ACTION_EVENTS
+                        and getattr(InterventionActionMetadata, x) not in cls.INCLUDE_ACTION_EVENTS
+                    )
+                ]
+
+            # Auto generate the start events if the flag is set
+            if cls.AUTO_INCLUDE_START_EVENTS:
+                # Initialize the ExecutionTracer trace types
+                _ = ExecutionTracer.trace_types
+
+                cls.INCLUDE_START_EVENTS += [
+                    x for x in ExecutionTracer.INCLUDE_TASK_STEP_EVENTS
+                    if (
+                        x not in cls.EXCLUDE_START_EVENTS
+                        and x not in cls.INCLUDE_START_EVENTS
+                    )
+                ]
+
+            # Auto generate the end events if the flag is set
+            if cls.AUTO_INCLUDE_END_EVENTS:
+                cls.INCLUDE_END_EVENTS += [
+                    getattr(RequestAssistanceResult, x) for x in sorted(dir(RequestAssistanceResult))
+                    if (
+                        x.isupper()
+                        and getattr(RequestAssistanceResult, x) not in cls.EXCLUDE_END_EVENTS
+                        and getattr(RequestAssistanceResult, x) not in cls.INCLUDE_END_EVENTS
+                    )
+                ]
+
+            cls._trace_types = (
+                [(Tracer.TIME_EVENT, None, 'time')]
+                + [
+                    (InterventionEvent.HYPOTHESIS_EVENT, getattr(InterventionHypothesisMetadata, y), x)
+                    for y in dir(InterventionHypothesisMetadata) if y.isupper() and y != 'ABSENT'
+                    for x in cls.INCLUDE_HYPOTHESIS_EVENTS
+                ]
+                + [
+                    (InterventionEvent.START_OR_END_EVENT, InterventionStartEndMetadata.START, x)
+                    for x in cls.INCLUDE_START_EVENTS
+                ]
+                + [
+                    (InterventionEvent.START_OR_END_EVENT, InterventionStartEndMetadata.END, x)
+                    for x in cls.INCLUDE_END_EVENTS
+                ]
+                + [(InterventionEvent.ACTION_EVENT, None, x) for x in cls.INCLUDE_ACTION_EVENTS]
+            )
+
+        return cls._trace_types
+
+    @classproperty
+    def trace_types_idx(cls):
+        if cls._trace_types_idx is None:
+            cls._trace_types_idx = { x: i for i, x in enumerate(Tracer.trace_types) }
+        return cls._trace_types_idx
+
+    @property
+    def num_events(self):
+        return len(self.full_trace)
+
+    @property
+    def last_event(self):
+        return self.full_trace[-1]
+
+    @property
+    def trace(self):
+        # return self._trace[:, :self.num_events]
+        pass
 
     def start(self):
         self._should_trace = True

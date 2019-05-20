@@ -142,9 +142,11 @@ class Tracer(object):
     _trace_types = None
     _trace_types_idx = None
 
-    # Flags for generating and operating on the vector of trace types
-    AUTO_INCLUDE_BELIEF_EVENTS = True
-    AUTO_INCLUDE_TASK_EVENTS = True
+    # Flags for generating the vector of trace types
+    AUTO_INCLUDE_BELIEF_EVENTS = True   # Populated from BeliefKeys
+    AUTO_INCLUDE_TASK_EVENTS = True     # Populated from default_actions_dict and tasks.yaml
+
+    # Flags for operating on the vector of trace types
     INCLUDE_UNKNOWN_TASK_EVENTS = True
 
     def __init__(self, start_time=None, create_parsed_events=False):
@@ -213,6 +215,7 @@ class Tracer(object):
             # If unknown task events should be included (which includes the
             # excluded events), then create a placeholder for them
             if cls.INCLUDE_UNKNOWN_TASK_EVENTS:
+                cls.INCLUDE_TASK_STEP_EVENTS.append(Tracer.UNKNOWN_TASK_NAME)
                 cls._trace_types.append(
                     (ExecutionEvent.TASK_STEP_EVENT, Tracer.UNKNOWN_TASK_NAME)
                 )
