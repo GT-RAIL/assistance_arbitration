@@ -155,7 +155,10 @@ class Tracer(object):
 
         # Book-keeping variables to keep track of the trace state
         self.full_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
-        self.parsed_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
+        if self._create_parsed_events:
+            self.parsed_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
+        else:
+            self.parsed_trace = None
         self._trace = np.ones((len(Tracer.trace_types), Tracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan
         self._should_trace = False  # Variable that determines whether to trace
 

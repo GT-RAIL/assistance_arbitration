@@ -100,8 +100,7 @@ class Tracer(object):
     _trace_types = None
     _trace_types_idx = None
 
-    def __init__(self, start_time=None, create_parsed_events=False):
-        start_time = start_time or rospy.Time.now()
+    def __init__(self, create_parsed_events=False):
         self._create_parsed_events = create_parsed_events
 
         # Book-keeping variables to keep track of the intervention events
@@ -109,9 +108,6 @@ class Tracer(object):
         self.parsed_traces = []
         self._traces = []
         self._should_trace = False
-
-        # # Initialize the trace
-        # self.initialize_trace(start_time)
 
         # The subscriber to track the trace
         self._trace_sub = rospy.Subscriber(
@@ -170,19 +166,13 @@ class Tracer(object):
 
             cls._trace_types = (
                 [(Tracer.TIME_EVENT, None, 'time')]
-                + [
-                    (InterventionEvent.HYPOTHESIS_EVENT, getattr(InterventionHypothesisMetadata, y), x)
-                    for y in dir(InterventionHypothesisMetadata) if y.isupper() and y != 'ABSENT'
-                    for x in cls.INCLUDE_HYPOTHESIS_EVENTS
-                ]
-                + [
-                    (InterventionEvent.START_OR_END_EVENT, InterventionStartEndMetadata.START, x)
-                    for x in cls.INCLUDE_START_EVENTS
-                ]
-                + [
-                    (InterventionEvent.START_OR_END_EVENT, InterventionStartEndMetadata.END, x)
-                    for x in cls.INCLUDE_END_EVENTS
-                ]
+                + [(InterventionEvent.HYPOTHESIS_EVENT, getattr(InterventionHypothesisMetadata, y), x)
+                   for y in dir(InterventionHypothesisMetadata) if y.isupper() and y != 'ABSENT'
+                   for x in cls.INCLUDE_HYPOTHESIS_EVENTS]
+                + [(InterventionEvent.START_OR_END_EVENT, InterventionStartEndMetadata.START, x)
+                   for x in cls.INCLUDE_START_EVENTS]
+                + [(InterventionEvent.START_OR_END_EVENT, InterventionStartEndMetadata.END, x)
+                    for x in cls.INCLUDE_END_EVENTS]
                 + [(InterventionEvent.ACTION_EVENT, None, x) for x in cls.INCLUDE_ACTION_EVENTS]
             )
 
@@ -216,12 +206,11 @@ class Tracer(object):
     def stop(self):
         self._should_trace = False
 
-    # def initialize_trace(self, start_time):
-    #     """Initialize the first trace event"""
-    #     event = InterventionEvent(stamp=start_time)
-    #     self.full_traces.append(event)
-    #     if self._create_parsed_events:
-    #         self.parsed_traces.append(self._get_parsed_event_from_event(event))
+    def initialize_traces(self):
+        self.full_traces.append(collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH))
+        if self._create_parsed_events:
+            self.parsed_traces.append(collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH))
+        self._traces.append(np.ones((len(Tracer.trace_types), Tracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan)
 
     def exclude_from_trace(self, msg):
         """Check to see if the message should be excluded from the trace"""
@@ -315,13 +304,67 @@ class Tracer(object):
             rospy.logwarn("Discarding event @ {} of type ({})".format(msg.stamp, msg.type))
             return
 
-        # Append the full trace
-        # self.full_traces.append(msg)
-        # if self._create_parsed_events:
-        #     self.parsed_traces.append(self._get_parsed_event_from_event(msg))
+        # If this is an unknown task failure, and the execution tracer is set to
+        # monitor unknown tasks, then update the message
+        if msg.type == InterventionEvent.START_OR_END_EVENT \
+                and msg.start_end_metadata.status == InterventionStartEndMetadata.START \
+                and msg.start_end_metadata.request.component not in Tracer.INCLUDE_START_EVENTS \
+                and ExecutionTracer.INCLUDE_UNKNOWN_TASK_EVENTS:
+            msg.start_end_metadata.request.component = ExecutionTracer.UNKNOWN_TASK_NAME
 
-        # Then, perform more processing for the specific parts of the trace that
-        # we are interested in
+        # Append the full trace
+        if msg.type == InterventionEvent.START_OR_END_EVENT \
+                and msg.start_end_metadata.status == InterventionStartEndMetadata.START:
+            self.initialize_traces()
+
+        num_events = self.num_events(-1)
+        self.full_traces[-1].append(msg)
+        if self._create_parsed_events:
+            self.parsed_traces[-1].append(self._get_parsed_event_from_event(msg))
+
+        # If the trace is too long, throw an error and stop updating the arrays
+        if num_events > Tracer.MAX_TRACE_LENGTH:
+            rospy.logwarn("Trace Length of {} > Max Length {}. Not tracking".format(
+                num_events, Tracer.MAX_TRACE_LENGTH
+            ))
+            return
+
+        # Copy the previous time stamp over
+        self._traces[-1][:, num_events] = self._traces[-1][:, num_events-1]
+        current_event = self._traces[-1][:, num_events]
+        current_event[0] = msg.stamp.to_time()
+
+        # Based on the type, update the trace
+        if msg.type == InterventionEvent.START_OR_END_EVENT \
+                and msg.start_end_metadata.status == InterventionStartEndMetadata.START:
+            row = Tracer.trace_types_idx[(msg.type,
+                                          msg.start_end_metadata.status,
+                                          msg.start_end_metadata.request.component,)]
+            current_event[row] = 1.0
+        elif msg.type == InterventionEvent.START_OR_END_EVENT \
+                and msg.start_end_metadata.status == InterventionStartEndMetadata.END:
+            row = Tracer.trace_types_idx[(msg.type,
+                                          msg.start_end_metadata.status,
+                                          msg.start_end_metadata.response.resume_hint,)]
+            current_event[row] = 1.0
+        elif msg.type == InterventionEvent.ACTION_EVENT:
+            row = Tracer.trace_types_idx[(msg.type, None, msg.action_metadata.type,)]
+            current_event[row] = 1.0
+        elif msg.type == InterventionEvent.HYPOTHESIS_EVENT:
+            rows = [
+                Tracer.trace_types_idx[(msg.type,
+                                        InterventionHypothesisMetadata.SUSPECTED,
+                                        msg.hypothesis_metadata.name,)],
+                Tracer.trace_types_idx[(msg.type,
+                                        InterventionHypothesisMetadata.CONFIRMED,
+                                        msg.hypothesis_metadata.name,)]
+            ]
+            if msg.hypothesis_metadata.status == InterventionHypothesisMetadata.ABSENT:
+                current_event[rows] = np.array([np.nan, np.nan])
+            elif msg.hypothesis_metadata.status == InterventionHypothesisMetadata.SUSPECTED:
+                current_event[rows] = np.array([1.0, np.nan])
+            elif msg.hypothesis_metadata.status == InterventionHypothesisMetadata.CONFIRMED:
+                current_event[rows] = np.array([np.nan, 1.0])
 
     def _get_parsed_event_from_event(self, event):
         global RESUME_HINT_DICT
