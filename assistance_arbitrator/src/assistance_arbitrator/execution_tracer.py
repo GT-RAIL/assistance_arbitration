@@ -246,10 +246,6 @@ class Tracer(object):
         return len(self.full_trace)
 
     @property
-    def last_event(self):
-        return self.full_trace[-1]
-
-    @property
     def trace(self):
         return self._trace[:, :self.num_events]
 

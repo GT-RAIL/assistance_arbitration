@@ -105,13 +105,13 @@ class Tracer(object):
         self._create_parsed_events = create_parsed_events
 
         # Book-keeping variables to keep track of the intervention events
-        self.full_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
-        self.parsed_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
+        self.full_traces = []
+        self.parsed_traces = []
         self._traces = []
         self._should_trace = False
 
-        # Initialize the trace
-        self.initialize_trace(start_time)
+        # # Initialize the trace
+        # self.initialize_trace(start_time)
 
         # The subscriber to track the trace
         self._trace_sub = rospy.Subscriber(
@@ -195,17 +195,20 @@ class Tracer(object):
         return cls._trace_types_idx
 
     @property
-    def num_events(self):
-        return len(self.full_trace)
+    def num_interventions(self):
+        return len(self.full_traces)
 
     @property
     def last_event(self):
-        return self.full_trace[-1]
+        if self.num_interventions == 0:
+            return None
+        return self.full_traces[-1][-1]
 
-    @property
-    def trace(self):
-        # return self._trace[:, :self.num_events]
-        pass
+    def num_events(self, trace_idx):
+        return len(self.full_traces[trace_idx])
+
+    def trace(self, trace_idx):
+        return self._traces[trace_idx][:, :self.num_events(trace_idx)]
 
     def start(self):
         self._should_trace = True
@@ -213,12 +216,12 @@ class Tracer(object):
     def stop(self):
         self._should_trace = False
 
-    def initialize_trace(self, start_time):
-        """Initialize the first trace event"""
-        event = InterventionEvent(stamp=start_time)
-        self.full_trace.append(event)
-        if self._create_parsed_events:
-            self.parsed_trace.append(self._get_parsed_event_from_event(event))
+    # def initialize_trace(self, start_time):
+    #     """Initialize the first trace event"""
+    #     event = InterventionEvent(stamp=start_time)
+    #     self.full_traces.append(event)
+    #     if self._create_parsed_events:
+    #         self.parsed_traces.append(self._get_parsed_event_from_event(event))
 
     def exclude_from_trace(self, msg):
         """Check to see if the message should be excluded from the trace"""
@@ -229,7 +232,79 @@ class Tracer(object):
         if msg.type not in [InterventionEvent.START_OR_END_EVENT,
                             InterventionEvent.HYPOTHESIS_EVENT,
                             InterventionEvent.ACTION_EVENT]:
-            rospy.logwarn("Unknown event @ {} of type ({})".format(msg.stamp, msg.type))
+            return True
+
+        # Check against the include/exclude sanity checks
+        if (
+            msg.type == InterventionEvent.START_OR_END_EVENT
+            and msg.start_end_metadata.status not in [
+                InterventionStartEndMetadata.START,
+                InterventionStartEndMetadata.END,
+            ]
+        ):
+            return True
+
+        if (
+            msg.type == InterventionEvent.START_OR_END_EVENT
+            and msg.start_end_metadata.status == InterventionStartEndMetadata.START
+            and (msg.type, msg.start_end_metadata.status, msg.start_end_metadata.request.component,)
+                not in Tracer.trace_types_idx
+        ):
+            return True
+
+
+        if (
+            msg.type == InterventionEvent.START_OR_END_EVENT
+            and msg.start_end_metadata.status == InterventionStartEndMetadata.END
+            and (msg.type, msg.start_end_metadata.status, msg.start_end_metadata.response.resume_hint)
+                not in Tracer.trace_types_idx
+        ):
+            return True
+
+        if (
+            msg.type == InterventionEvent.HYPOTHESIS_EVENT
+            and msg.hypothesis_metadata.status not in [
+                InterventionHypothesisMetadata.ABSENT,
+                InterventionHypothesisMetadata.CONFIRMED,
+                InterventionHypothesisMetadata.SUSPECTED,
+            ]
+        ):
+            return True
+
+        if (
+            msg.type == InterventionEvent.HYPOTHESIS_EVENT
+            and (msg.type, InterventionHypothesisMetadata.CONFIRMED, msg.hypothesis_metadata.name)
+                not in Tracer.trace_types_idx
+        ):
+            return True
+
+        if (
+            msg.type == InterventionEvent.ACTION_EVENT
+            and (msg.type, None, msg.action_metadata.type) not in Tracer.trace_types_idx
+        ):
+            return True
+
+        # Finally, check that we are potentially tracking an intervention trace
+        if (
+            self.last_event is None
+            or (self.last_event.type == InterventionEvent.START_OR_END_EVENT
+                and self.last_event.start_end_metadata.status == InterventionStartEndMetadata.END)
+        ) and (
+            msg.type != InterventionEvent.START_OR_END_EVENT
+            or msg.start_end_metadata.status != InterventionStartEndMetadata.START
+        ):
+            rospy.logwarn("Attempting to add to non-existent intervention")
+            return True
+
+        if (
+            self.last_event is not None
+            and (self.last_event.type != InterventionEvent.START_OR_END_EVENT
+                or self.last_event.start_end_metadata.status != InterventionStartEndMetadata.END)
+        ) and (
+            msg.type == InterventionEvent.START_OR_END_EVENT
+            and msg.start_end_metadata.status == InterventionStartEndMetadata.START
+        ):
+            rospy.logwarn("Attempting to start in the middle of another intervention")
             return True
 
         # All is well, include in the trace
@@ -237,12 +312,13 @@ class Tracer(object):
 
     def update_trace(self, msg):
         if self.exclude_from_trace(msg):
+            rospy.logwarn("Discarding event @ {} of type ({})".format(msg.stamp, msg.type))
             return
 
         # Append the full trace
-        self.full_trace.append(msg)
-        if self._create_parsed_events:
-            self.parsed_trace.append(self._get_parsed_event_from_event(msg))
+        # self.full_traces.append(msg)
+        # if self._create_parsed_events:
+        #     self.parsed_traces.append(self._get_parsed_event_from_event(msg))
 
         # Then, perform more processing for the specific parts of the trace that
         # we are interested in
