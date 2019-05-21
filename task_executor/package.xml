@@ -53,18 +53,19 @@
   <depend>actionlib</depend>
   <depend>actionlib_msgs</depend>
   <depend>assistance_msgs</depend>
-  <depend>control_msgs</depend>
-  <depend>fetch_grasp_suggestion</depend>
-  <depend>geometry_msgs</depend>
-  <depend>hlpr_speech_msgs</depend>
-  <depend>move_base_msgs</depend>
-  <depend>rail_manipulation_msgs</depend>
   <depend>rospy</depend>
-  <depend>sensor_msgs</depend>
-  <depend>sound_interface</depend>
-  <depend>std_msgs</depend>
-  <depend>std_srvs</depend>
-  <depend>trajectory_msgs</depend>
+
+  <exec_depend>control_msgs</exec_depend>
+  <exec_depend>fetch_grasp_suggestion</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>hlpr_speech_msgs</exec_depend>
+  <exec_depend>move_base_msgs</exec_depend>
+  <exec_depend>rail_manipulation_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>sound_interface</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>std_srvs</exec_depend>
+  <exec_depend>trajectory_msgs</exec_depend>
 
   <exec_depend>hlpr_speech_recognition</exec_depend>
   <exec_depend>simulation_helpers</exec_depend>

@@ -52,18 +52,19 @@
 
   <depend>actionlib</depend>
   <depend>assistance_msgs</depend>
-  <depend>control_msgs</depend>
-  <depend>fetch_driver_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>moveit_msgs</depend>
-  <depend>nav_msgs</depend>
-  <depend>power_msgs</depend>
-  <depend>ros_topology_msgs</depend>
   <depend>rospy</depend>
-  <depend>sensor_msgs</depend>
-  <depend>visualization_msgs</depend>
 
+  <exec_depend>control_msgs</exec_depend>
+  <exec_depend>fetch_driver_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>local_strategy</exec_depend>
+  <exec_depend>moveit_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>power_msgs</exec_depend>
+  <exec_depend>remote_strategy</exec_depend>
+  <exec_depend>ros_topology_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

@@ -11,18 +11,18 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   actionlib_msgs
   assistance_msgs
-  control_msgs
-  fetch_grasp_suggestion
-  geometry_msgs
-  hlpr_speech_msgs
-  move_base_msgs
-  rail_manipulation_msgs
+  # control_msgs
+  # fetch_grasp_suggestion
+  # geometry_msgs
+  # hlpr_speech_msgs
+  # move_base_msgs
+  # rail_manipulation_msgs
   rospy
-  sensor_msgs
-  sound_interface
-  std_msgs
-  std_srvs
-  trajectory_msgs
+  # sensor_msgs
+  # sound_interface
+  # std_msgs
+  # std_srvs
+  # trajectory_msgs
 )
 
 ## System dependencies are found with CMake's conventions
