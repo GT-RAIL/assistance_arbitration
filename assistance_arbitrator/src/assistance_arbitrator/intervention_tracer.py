@@ -200,6 +200,10 @@ class Tracer(object):
     def trace(self, trace_idx):
         return self._traces[trace_idx][:, :self.num_events(trace_idx)]
 
+    @property
+    def traces(self):
+        return [self.trace(idx) for idx in xrange(self.num_interventions)]
+
     def start(self):
         self._should_trace = True
 
