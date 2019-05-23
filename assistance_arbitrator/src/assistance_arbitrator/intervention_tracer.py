@@ -213,6 +213,9 @@ class Tracer(object):
         return self.full_traces[-1][-1]
 
     def num_events(self, trace_idx):
+        if len(self.full_traces) == 0:
+            return None
+
         return len(self.full_traces[trace_idx])
 
     def trace(self, trace_idx):
