@@ -184,6 +184,24 @@ class Tracer(object):
             cls._trace_types_idx = { x: i for i, x in enumerate(Tracer.trace_types) }
         return cls._trace_types_idx
 
+    @staticmethod
+    def trace_idx_by_type(super_type, sub_type):
+        if super_type == InterventionEvent.HYPOTHESIS_EVENT \
+                and sub_type in [InterventionHypothesisMetadata.SUSPECTED, InterventionHypothesisMetadata.CONFIRMED]:
+            trace_names = Tracer.INCLUDE_HYPOTHESIS_EVENTS
+        elif super_type == InterventionEvent.START_OR_END_EVENT \
+                and sub_type == InterventionStartEndMetadata.START:
+            trace_names = Tracer.INCLUDE_START_EVENTS
+        elif super_type == InterventionEvent.START_OR_END_EVENT \
+                and sub_type == InterventionStartEndMetadata.END:
+            trace_names = Tracer.INCLUDE_END_EVENTS
+        elif super_type == InterventionEvent.ACTION_EVENT and sub_type is None:
+            trace_names = Tracer.INCLUDE_ACTION_EVENTS
+        else:
+            raise ValueError("Unknown trace type: ({}, {})".format(super_type, sub_type))
+
+        return [Tracer.trace_types_idx[(super_type, sub_type, n,)] for n in trace_names]
+
     @property
     def num_interventions(self):
         return len(self.full_traces)
@@ -333,10 +351,11 @@ class Tracer(object):
             ))
             return
 
-        # Copy the previous time stamp over
+        # Copy the previous time stamp over; reset the actions
         self._traces[-1][:, num_events] = self._traces[-1][:, num_events-1]
         current_event = self._traces[-1][:, num_events]
         current_event[0] = msg.stamp.to_time()
+        current_event[Tracer.trace_idx_by_type(InterventionEvent.ACTION_EVENT, None)] = np.nan
 
         # Based on the type, update the trace
         if msg.type == InterventionEvent.START_OR_END_EVENT \
