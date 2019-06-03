@@ -28,12 +28,15 @@ class TaskContext(object):
                 execution should start
             restart_child (bool) : If the current start_idx is a task, should
                 that be restarted, or should it be resumed from its current
-                location?
+                location? If this is ``True``, :data:`child_context` must be
+                ``None``
             child_context (TaskContext) : The context of how the child task
                 should proceed. If ``None``, then the child by default will get
                 a completely fresh :class:`TaskContext` (in :class:`Task`)
         """
-        assert start_idx >= 0
+        assert start_idx >= 0, "Context: start_idx must be >= 0"
+        assert not (restart_child and child_context is not None), \
+            "Context: restart_child cannot be True when child_context exists"
         self.start_idx = start_idx
         self.restart_child = restart_child
         self.child_context = child_context
@@ -47,9 +50,11 @@ class TaskContext(object):
         Given a pickled dictionary returned in the context of
         ``task_execution_msgs/RequestAssistanceResult``, create the
         corresponding :class:`TaskContext` objects.
+
         Args:
             context_dict (dict) : the context of a resumption that can be used
                 to create objects of this class
+
         Returns:
             context (:class:`TaskContext`)
         """
@@ -194,7 +199,8 @@ class Task(AbstractStep):
             # defs accordingly. current_step_def remains unchanged here
             if step.has_key('loop'):
                 condition = step_params['condition']
-                rospy.loginfo("Loop {}: condition - {}".format(step_name, condition))
+                condition, condition_str = self._resolve_condition(condition, var, params)
+                rospy.loginfo("Loop {}: {} -> {}".format(step_name, condition_str, condition))
 
                 # We only loop while true. If done, move to next step
                 if not condition:
@@ -209,7 +215,8 @@ class Task(AbstractStep):
                 }
             elif step.has_key('choice'):
                 condition = step_params['condition']
-                rospy.loginfo("Choice {}: condition - {}".format(step_name, condition))
+                condition, condition_str = self._resolve_condition(condition, var, params)
+                rospy.loginfo("Choice {}: {} -> {}".format(step_name, condition_str, condition))
 
                 # Based on the condition, update the step definition
                 # to the next step
@@ -245,23 +252,16 @@ class Task(AbstractStep):
                 if step.has_key('action'):
                     self.current_executor = self.actions[step['action']]
                 else:  # step.has_key('task')
-                    # Create the child task context based on saved information
-                    # child_context = None
-                    # if self.current_executor is not None \
-                    #         and isinstance(self.current_executor, Task) \
-                    #         and not context.restart_child \
-                    #         and context.start_idx == self.step_idx:
-                    #     # Restart the child if it ends in an operation
-                    #     child_context = TaskContext(
-                    #         start_idx=self.current_executor.step_idx,
-                    #         restart_child=(False or self.current_executor.current_executor is None)
-                    #     )
-                    # else:
-                    #     # restart_child or current_executor is None or
-                    #     # current_executor is not of type Task or
-                    #     # current_executor is the previous task in the program
-                    #     child_context = TaskContext()
-                    child_context = context.child_context or TaskContext()
+                    # Create the child task context
+                    child_context = (
+                        context.child_context
+                        if (
+                            context.child_context is not None
+                            and context.start_idx == self.step_idx
+                            and not context.restart_child
+                        )
+                        else TaskContext()
+                    )
 
                     # Set the current_executor to the task at hand
                     self.current_executor = self.tasks[step['task']]
@@ -288,7 +288,7 @@ class Task(AbstractStep):
                 # If the reason we stopped is a failure, then return
                 if executor.is_preempted():
                     rospy.logwarn(
-                        "Task {}, Step {}({}): PREEMPTED. Context Keys: {}"
+                        "Task {}, Step {}({}): PREEMPTED. Context: {}"
                         .format(
                             self.name,
                             self.step_idx,
@@ -322,6 +322,10 @@ class Task(AbstractStep):
                     )
                     raise StopIteration()
 
+                if executor.is_succeeded() and step_params.get('context') == context.child_context:
+                    # Clear out the child context if the executor succeeded
+                    context.child_context = None
+
             # Validate the variables
             if not self._validate_variables(step.get('var', []), variables):
                 rospy.logerr(
@@ -350,6 +354,7 @@ class Task(AbstractStep):
         self.step_idx = -1
         self.current_step_def = self.current_executor = None
         yield self.set_succeeded(**{var_name: self.var_values[var_name] for var_name in self.var})
+        self.var_values = dict()  # Reset state if the task was successful
 
     def stop(self):
         """Preempt the task"""
@@ -368,6 +373,43 @@ class Task(AbstractStep):
         else:
             return self.current_executor
 
+    def get_executor_context(self):
+        """
+        Return a ``dict`` of contexts for the task. Similar to
+        :meth:`get_executor`, but instead of simply the ultimate executor in the
+        task, this method provides the entire call stack to that ultimate
+        executor. As with :meth:`get_executor`, this method is useful for
+        providing context to a ``task_execution_msgs/RequestAssistanceGoal``
+        """
+        context = {
+            'task': self.name,
+            'step_idx': self.step_idx,
+            'num_aborts': self.num_aborts,
+        }
+        if isinstance(self.current_executor, Task):
+            context['context'] = self.current_executor.get_executor_context()
+        elif isinstance(self.current_executor, AbstractStep):
+            context['context'] = { 'action': self.current_executor.name,
+                                   'num_aborts': self.current_executor.num_aborts, }
+        else:
+            context['context'] = {}
+
+        return context
+
+    def notify_aborted(self):
+        """
+        In the event that the task fails because of an exception, we need to
+        update the status of all the intermediate steps to a status of aborted.
+        """
+        # Set the current executor to aborted
+        if isinstance(self.current_executor, Task):
+            self.current_executor.notify_aborted()
+        elif isinstance(self.current_executor, AbstractStep):
+            self.current_executor.set_aborted()
+
+        # Set yourself to aborted
+        self.set_aborted()
+
     def _validate_params(self, expected_params, actual_params):
         return sorted(actual_params.keys()) == sorted(expected_params)
 
@@ -375,7 +417,7 @@ class Task(AbstractStep):
         return sorted(actual_var.keys()) == sorted(expected_var)
 
     def _resolve_param(self, param, var, task_params):
-        if isinstance(param, str):
+        if isinstance(param, str) and ' ' not in param.strip():
             splits = param.split('.', 1)  # Split up the param
 
             # Check if this requires a var resolution
@@ -389,15 +431,29 @@ class Task(AbstractStep):
         # Otherwise, this param should be used as is
         return param
 
+    def _resolve_condition(self, condition_str, var, task_params):
+        if isinstance(condition_str, str) and ' ' in condition_str:
+            conditions = condition_str.split()
+            conditions = [self._resolve_param(c, var, task_params) for c in conditions]
+            condition_str = " ".join([str(c) for c in conditions])
+            condition = eval(condition_str)
+
+        else:
+            condition = condition_str
+
+        return condition, condition_str
+
     @staticmethod
     def pprint_variables(variables):
         """
         Helper function to pretty print the variable context that is returned
         from the tasks. Basically stub out all objects that are not basic python
         types
+
         Args:
             variables (dict, list, tuple) : A container of variables that form
             the context of return values from a task or action
+
         Returns:
             (dict, list, tuple) : A container of variables with all \
                 values that are not basic python types stubbed out
@@ -406,7 +462,7 @@ class Task(AbstractStep):
             pp_var = {}
             for k, v in variables.iteritems():
                 if isinstance(v, (list, tuple, dict,)):
-                    pp_var[k] = _pprint_variables(v)
+                    pp_var[k] = Task.pprint_variables(v)
                 elif isinstance(v, (bool, int, long, float, str, unicode)):
                     pp_var[k] = v
                 else:
@@ -416,8 +472,8 @@ class Task(AbstractStep):
             pp_var = []
             for x in variables:
                 if isinstance(x, (list, tuple, dict,)):
-                    pp_var.append(_pprint_variables(x))
-                elif isinstance(v, (bool, int, long, float, str, unicode)):
+                    pp_var.append(Task.pprint_variables(x))
+                elif isinstance(x, (bool, int, long, float, str, unicode)):
                     pp_var.append(x)
                 else:
                     pp_var.append(type(x))
