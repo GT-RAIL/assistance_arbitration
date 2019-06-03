@@ -31,25 +31,26 @@ class PickAction(AbstractStep):
         self._grasp_client.wait_for_server()
         rospy.loginfo("...grasp_executor connected")
 
-    def run(self, cube_idx, grasps):
+    def run(self, object_idx, grasps, max_velocity_scaling):
         """
         The run function for this step
 
         Args:
-            cube_idx (int) : the index of the desired object in the output of \
+            object_idx (int) : the index of the desired object in the output of \
                 ``rail_segmentation``
             grasps (list of geometry_msgs/Pose) : a list of candidate grasps \
                 that can be obtained from :mod:`task_executor.actions.find_grasps`
+            max_velocity_scaling (double) : how fast the arm should execute
 
         .. seealso::
 
             :meth:`task_executor.abstract_step.AbstractStep.run`
         """
-        rospy.loginfo("Action {}: Picking up object at index {}".format(self.name, cube_idx))
+        rospy.loginfo("Action {}: Picking up object at index {}".format(self.name, object_idx))
 
         # Create the template goal
         goal = ExecuteGraspGoal()
-        goal.index = cube_idx
+        goal.index = object_idx
         goal.grasp_pose.header.frame_id = grasps.header.frame_id
 
         # Iterate through all the poses, and report an error if all of them
@@ -61,6 +62,7 @@ class PickAction(AbstractStep):
 
             goal.grasp_pose.pose = grasp_pose
             goal.grasp_pose.header.stamp = rospy.Time.now()
+            goal.max_velocity_scaling_factor = max_velocity_scaling
             self._grasp_client.send_goal(goal)
             self.notify_action_send_goal(PickAction.PICK_ACTION_SERVER, goal)
 
@@ -84,7 +86,7 @@ class PickAction(AbstractStep):
             yield self.set_preempted(
                 action=self.name,
                 status=status,
-                goal=cube_idx,
+                goal=object_idx,
                 num_grasps=len(grasps.poses),
                 grasp_num=grasp_num,
                 grasps=grasps,
@@ -94,7 +96,7 @@ class PickAction(AbstractStep):
             yield self.set_aborted(
                 action=self.name,
                 status=status,
-                goal=cube_idx,
+                goal=object_idx,
                 num_grasps=len(grasps.poses),
                 grasp_num=grasp_num,
                 grasps=grasps,
