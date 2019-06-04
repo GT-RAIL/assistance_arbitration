@@ -1,0 +1,3 @@
+# Predfined Strategy
+
+The strategies here are predefined by the developers...
