@@ -10,10 +10,10 @@ project(assistance_msgs)
 find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   geometry_msgs
-  message_generation
-  std_msgs
   manipulation_actions
+  message_generation
   rail_manipulation_msgs
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions

@@ -3,7 +3,6 @@ node: ''
 
 include_regex:
 - "/diagnostics(.*)"
-- /topology
 - /clock
 
 - /execution_monitor/trace
