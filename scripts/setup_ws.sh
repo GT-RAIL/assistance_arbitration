@@ -12,6 +12,7 @@ sudo apt-get install -y \
         libgsl-dev \
         libhdf5-dev \
         nano \
+        portaudio19-dev \
         python-catkin-tools \
         python-rosinstall-generator \
         ros-melodic-amcl \
@@ -39,7 +40,7 @@ sudo apt-get install -y \
         vim
 curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
 sudo python /tmp/get-pip.py && \
-sudo -H pip install -U -r requirements.txt
+sudo -H pip install -I -U -r requirements.txt
 
 # Create the workspace directories
 mkdir -p ./stable/src ./active/src

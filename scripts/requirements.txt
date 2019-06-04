@@ -1,4 +1,3 @@
-Cython
 dash
 dash-core-components
 dash-html-components
@@ -35,5 +34,6 @@ sphinx
 sphinx-argparse
 sphinx_rtd_theme
 tables
+testresources
 treeinterpreter
 wstool
