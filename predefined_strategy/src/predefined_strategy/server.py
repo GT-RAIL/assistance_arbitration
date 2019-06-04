@@ -11,17 +11,17 @@ import rospy
 import actionlib
 
 from actionlib_msgs.msg import GoalStatus
-from task_execution_msgs.msg import (RequestAssistanceAction,
-                                     RequestAssistanceFeedback,
-                                     RequestAssistanceResult,
-                                     ExecuteAction)
+from assistance_msgs.msg import (RequestAssistanceAction,
+                                 RequestAssistanceFeedback,
+                                 RequestAssistanceResult,
+                                 ExecuteAction)
 
-from task_monitor.recovery_strategies import RecoveryStrategies
+from predefined_strategy.recovery_strategies import RecoveryStrategies
 
 
 # The server arbitrates who to send the request to
 
-class TaskMonitorServer(object):
+class PredefinedStrategyServer(object):
     """
     Given a request for assistance, and some TBD models, the server uses
     the logic in this class to decide whether to request help from local or from
@@ -37,7 +37,7 @@ class TaskMonitorServer(object):
     def __init__(self):
         # Create something to hold the action clients that we will be using
         self._recovery_clients = {
-            TaskMonitorServer.RECOVERY_ACTION_SERVER: None,
+            PredefinedStrategyServer.RECOVERY_ACTION_SERVER: None,
         }
         self._connection_timers = {}
         self._recovery_clients_lock = Lock()
@@ -45,8 +45,8 @@ class TaskMonitorServer(object):
         # Initialize the lookup table of recovery modes
         self._recovery_strategies = RecoveryStrategies(
             rospy.get_param("/{}/{}".format(
-                TaskMonitorServer.RECOVERY_ACTION_SERVER,
-                TaskMonitorServer.RECOVERY_TASKS_PARAM
+                PredefinedStrategyServer.RECOVERY_ACTION_SERVER,
+                PredefinedStrategyServer.RECOVERY_TASKS_PARAM
             ), {})
         )
 
@@ -75,7 +75,7 @@ class TaskMonitorServer(object):
             self._recovery_strategies.init()
 
         self._connection_timers["_recovery_strategies_init"] = rospy.Timer(
-            rospy.Duration(TaskMonitorServer.CONNECTION_CHECK_DURATION),
+            rospy.Duration(PredefinedStrategyServer.CONNECTION_CHECK_DURATION),
             timer_callback,
             oneshot=True
         )
@@ -88,7 +88,7 @@ class TaskMonitorServer(object):
 
         # Start the periodic checks to see if the client has connected
         self._connection_timers[client_name] = rospy.Timer(
-            rospy.Duration(TaskMonitorServer.CONNECTION_CHECK_DURATION),
+            rospy.Duration(PredefinedStrategyServer.CONNECTION_CHECK_DURATION),
             self._check_client_connection(client_name, recovery_client),
             oneshot=False
         )

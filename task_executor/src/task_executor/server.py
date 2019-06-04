@@ -102,7 +102,7 @@ class TaskServer(object):
         The callback for a goal sent to the action server.
 
         Args:
-            goal (task_execution_msgs/ExecuteGoal) : The task to execute
+            goal (assistance_msgs/ExecuteGoal) : The task to execute
         """
         result = self._server.get_default_result()
         if goal.name not in self.tasks:

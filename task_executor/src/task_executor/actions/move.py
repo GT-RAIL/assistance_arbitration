@@ -50,7 +50,7 @@ class MoveAction(AbstractStep):
                     * `locations`, assume the rest of the string specifies the \
                         ``tf`` frame of the waypoint and therefore move to the \
                         pose ``[0, 0, 0]`` w.r.t that frame
-                    * `waypoints`, get a list of ``task_execution_msgs/Waypoint`` \
+                    * `waypoints`, get a list of ``assistance_msgs/Waypoint`` \
                         poses from :const:`WAYPOINTS_SERVICE_NAME`; visit the \
                         waypoints in order
                 * dict. Then if the keys of the dict are

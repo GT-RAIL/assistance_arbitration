@@ -12,8 +12,8 @@ import numpy as np
 import rospy
 
 from actionlib_msgs.msg import GoalStatus
-from task_execution_msgs.msg import (RequestAssistanceResult, ExecuteGoal,
-                                     BeliefKeys)
+from assistance_msgs.msg import (RequestAssistanceResult, ExecuteGoal,
+                                 BeliefKeys)
 from manipulation_actions.msg import StoreObjectResult, InHandLocalizeResult
 
 from task_executor.actions import get_default_actions
@@ -68,12 +68,12 @@ class RecoveryStrategies(object):
                 :const:`MAX_PRIMARY_TASK_ABORTS`, then the recovery is aborted
 
         Args:
-            assistance_goal (task_execution_msgs/RequestAssistanceGoal) :
+            assistance_goal (assistance_msgs/RequestAssistanceGoal) :
                 The request for assistance. The context attribute is unpickled
 
         Returns:
             (tuple):
-                - execute_goal (``task_execution_msgs/ExecuteGoal``) a task \
+                - execute_goal (``assistance_msgs/ExecuteGoal``) a task \
                     goal to execute if any. If ``None``, assume there is no \
                     such goal
                 - resume_hint (``RequestAssistanceResult.resume_hint``) a \
@@ -587,8 +587,8 @@ class RecoveryStrategies(object):
     @staticmethod
     def create_continue_result_context(goal_context):
         """
-        Given the context of a ``task_execution_msgs/RequestAssistanceGoal``
-        return a dictionary for a ``task_execution_msgs/RequestAssistanceResult``
+        Given the context of a ``assistance_msgs/RequestAssistanceGoal``
+        return a dictionary for a ``assistance_msgs/RequestAssistanceResult``
         context that indicates :const:`RequestAssistanceResult.RESUME_CONTINUE`
 
         Args:
@@ -617,7 +617,7 @@ class RecoveryStrategies(object):
             result_context (dict) : the result context, possibly created by
                 :meth:`create_continue_result_context`
             task_name (str) : the name of the task
-            resume_hint (uint8) : A ``task_execution_msgs/RequestAssistanceResult`` \
+            resume_hint (uint8) : A ``assistance_msgs/RequestAssistanceResult`` \
                 resume_hint constant for the task's resume hint
 
         Returns:

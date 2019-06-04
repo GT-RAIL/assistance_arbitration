@@ -16,7 +16,7 @@ from assistance_msgs.msg import RequestAssistanceGoal, RequestAssistanceResult
 class TaskContext(object):
     """
     A structure that's used to keep track of task state in the event of a
-    failure. Based on a ``task_execution_msgs/RequestAssistanceResult``
+    failure. Based on a ``assistance_msgs/RequestAssistanceResult``
     resume hint, the :class:`Task` can use the information in this structure to
     decide how to continue execution.
     """
@@ -48,7 +48,7 @@ class TaskContext(object):
     def create_from_dict(context_dict):
         """
         Given a pickled dictionary returned in the context of
-        ``task_execution_msgs/RequestAssistanceResult``, create the
+        ``assistance_msgs/RequestAssistanceResult``, create the
         corresponding :class:`TaskContext` objects.
 
         Args:
@@ -364,7 +364,7 @@ class Task(AbstractStep):
         """
         Return a :class:`task_executor.abstract_step.AbstractStep` that is
         either a task in the middle of an op, or an action. This method is used
-        to provide context to a ``task_execution_msgs/RequestAssistanceGoal``
+        to provide context to a ``assistance_msgs/RequestAssistanceGoal``
         """
         if self.current_executor is None:
             return self
@@ -379,7 +379,7 @@ class Task(AbstractStep):
         :meth:`get_executor`, but instead of simply the ultimate executor in the
         task, this method provides the entire call stack to that ultimate
         executor. As with :meth:`get_executor`, this method is useful for
-        providing context to a ``task_execution_msgs/RequestAssistanceGoal``
+        providing context to a ``assistance_msgs/RequestAssistanceGoal``
         """
         context = {
             'task': self.name,
