@@ -142,9 +142,11 @@ class Tracer(object):
     _trace_types = None
     _trace_types_idx = None
 
-    # Flags for generating and operating on the vector of trace types
-    AUTO_INCLUDE_BELIEF_EVENTS = True
-    AUTO_INCLUDE_TASK_EVENTS = True
+    # Flags for generating the vector of trace types
+    AUTO_INCLUDE_BELIEF_EVENTS = True   # Populated from BeliefKeys
+    AUTO_INCLUDE_TASK_EVENTS = True     # Populated from default_actions_dict and tasks.yaml
+
+    # Flags for operating on the vector of trace types
     INCLUDE_UNKNOWN_TASK_EVENTS = True
 
     def __init__(self, start_time=None, create_parsed_events=False):
@@ -153,7 +155,10 @@ class Tracer(object):
 
         # Book-keeping variables to keep track of the trace state
         self.full_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
-        self.parsed_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
+        if self._create_parsed_events:
+            self.parsed_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
+        else:
+            self.parsed_trace = None
         self._trace = np.ones((len(Tracer.trace_types), Tracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan
         self._should_trace = False  # Variable that determines whether to trace
 
@@ -213,6 +218,7 @@ class Tracer(object):
             # If unknown task events should be included (which includes the
             # excluded events), then create a placeholder for them
             if cls.INCLUDE_UNKNOWN_TASK_EVENTS:
+                cls.INCLUDE_TASK_STEP_EVENTS.append(Tracer.UNKNOWN_TASK_NAME)
                 cls._trace_types.append(
                     (ExecutionEvent.TASK_STEP_EVENT, Tracer.UNKNOWN_TASK_NAME)
                 )
@@ -241,10 +247,6 @@ class Tracer(object):
     @property
     def num_events(self):
         return len(self.full_trace)
-
-    @property
-    def last_event(self):
-        return self.full_trace[-1]
 
     @property
     def trace(self):
