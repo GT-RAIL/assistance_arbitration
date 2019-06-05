@@ -18,6 +18,7 @@ import actionlib
 from actionlib_msgs.msg import GoalStatus
 from assistance_msgs.msg import ExecuteAction, ExecuteGoal
 
+from assistance_msgs import msg_utils
 from task_executor.tasks import Task
 
 
@@ -90,7 +91,7 @@ def main():
     variables = (pickle.loads(result.variables) if result.variables != '' else {})
     rospy.loginfo("Result: {}. Variables:\n{}".format(
         _goal_status_from_code(status),
-        Task.pprint_variables(variables)
+        msg_utils.pprint_context(variables)
     ))
 
 

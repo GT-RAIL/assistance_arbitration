@@ -15,9 +15,12 @@ import numpy as np
 
 import rospy
 import actionlib
+
 from actionlib_msgs.msg import GoalStatus
-from task_execution_msgs.msg import ExecuteAction, ExecuteGoal, BeliefKeys
-from task_execution_msgs.srv import GetBeliefs
+from assistance_msgs.msg import ExecuteAction, ExecuteGoal, BeliefKeys
+from assistance_msgs.srv import GetBeliefs
+
+from assistance_msgs import msg_utils
 from task_executor.actions import default_actions_dict
 
 
@@ -357,5 +360,5 @@ if __name__ == '__main__':
 #     variables = (pickle.loads(result.variables) if result.variables != '' else {})
 #     rospy.loginfo("Result: {}. Variables:\n{}".format(
 #         _goal_status_from_code(status),
-#         Task.pprint_variables(variables)
+#         msg_utils.pprint_context(variables)
 #     ))

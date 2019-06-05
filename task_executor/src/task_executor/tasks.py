@@ -5,10 +5,11 @@ from __future__ import print_function, division
 
 import rospy
 
+from assistance_msgs.msg import RequestAssistanceGoal, RequestAssistanceResult
+
+from assistance_msgs import msg_utils
 from task_executor.abstract_step import AbstractStep
 from task_executor import ops
-
-from assistance_msgs.msg import RequestAssistanceGoal, RequestAssistanceResult
 
 
 # A class detailing how a `Task` should execute
@@ -293,7 +294,7 @@ class Task(AbstractStep):
                             self.name,
                             self.step_idx,
                             step_name,
-                            Task.pprint_variables(variables)
+                            msg_utils.pprint_context(variables)
                         )
                     )
                     yield self.set_preempted(
@@ -311,7 +312,7 @@ class Task(AbstractStep):
                             self.name,
                             self.step_idx,
                             step_name,
-                            Task.pprint_variables(variables)
+                            msg_utils.pprint_context(variables)
                         )
                     )
                     yield self.set_aborted(
@@ -442,40 +443,3 @@ class Task(AbstractStep):
             condition = condition_str
 
         return condition, condition_str
-
-    @staticmethod
-    def pprint_variables(variables):
-        """
-        Helper function to pretty print the variable context that is returned
-        from the tasks. Basically stub out all objects that are not basic python
-        types
-
-        Args:
-            variables (dict, list, tuple) : A container of variables that form
-            the context of return values from a task or action
-
-        Returns:
-            (dict, list, tuple) : A container of variables with all \
-                values that are not basic python types stubbed out
-        """
-        if isinstance(variables, dict):
-            pp_var = {}
-            for k, v in variables.iteritems():
-                if isinstance(v, (list, tuple, dict,)):
-                    pp_var[k] = Task.pprint_variables(v)
-                elif isinstance(v, (bool, int, long, float, str, unicode)):
-                    pp_var[k] = v
-                else:
-                    pp_var[k] = type(v)
-
-        elif isinstance(variables, (list, tuple,)):
-            pp_var = []
-            for x in variables:
-                if isinstance(x, (list, tuple, dict,)):
-                    pp_var.append(Task.pprint_variables(x))
-                elif isinstance(x, (bool, int, long, float, str, unicode)):
-                    pp_var.append(x)
-                else:
-                    pp_var.append(type(x))
-
-        return pp_var
