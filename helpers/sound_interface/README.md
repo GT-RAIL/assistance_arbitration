@@ -76,10 +76,9 @@ The following commands should each be run in their own terminal window.
 roscore
 
 # Run a sound_play node
-rosrun sound_play soundplay_node.py
+rosrun sound_interface server_node.py
 
-# Run the script to test sounds. The following command prints out a help
-python $(pwd)/local_strategy/src/local_strategy/speak.py --help
+# Run the task executor to play sounds
+rosrun task_executor run_action.py speak '{"text": "Hello World"}'
+rosrun task_executor run_action.py beep '{"beep": "cheerful"}'
 ```
-
-The demo script (the last command) has two modes of operation - `beep` and `speak`. The former plays pre-recorded R2D2 beeps based on the key. The latter performs TTS using Mary and outputs it via `sound_play`. There are also options to change the emotion in the output speech with the use of `EmotionML`.
