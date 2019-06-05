@@ -10,15 +10,7 @@ project(assistance_arbitrator)
 find_package(catkin REQUIRED COMPONENTS
   actionlib
   assistance_msgs
-  control_msgs
-  fetch_driver_msgs
-  geometry_msgs
-  moveit_msgs
-  nav_msgs
-  power_msgs
   rospy
-  sensor_msgs
-  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions

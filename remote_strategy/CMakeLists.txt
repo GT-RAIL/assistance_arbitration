@@ -10,14 +10,7 @@ project(remote_strategy)
 find_package(catkin REQUIRED COMPONENTS
   actionlib
   assistance_msgs
-  control_msgs
-  fetch_driver_msgs
-  geometry_msgs
-  rail_people_detection_msgs
   rospy
-  sensor_msgs
-  std_msgs
-  task_executor
 )
 
 ## System dependencies are found with CMake's conventions

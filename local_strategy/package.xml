@@ -52,14 +52,7 @@
 
   <depend>actionlib</depend>
   <depend>assistance_msgs</depend>
-  <depend>control_msgs</depend>
-  <depend>fetch_driver_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>rail_people_detection_msgs</depend>
   <depend>rospy</depend>
-  <depend>sensor_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>task_executor</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
