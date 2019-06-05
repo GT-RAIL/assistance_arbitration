@@ -51,6 +51,8 @@ The repository as a whole is a very involved executive level of a robot architec
 
 ## API Documentation
 
+**WARNING: API docs are out of date and need to be rebuilt**
+
 The API documentation of the packages in this folder is likely to go out of date very quickly as new functionality is developed. Therefore, we use `sphinx` to automatically generate documentation from docstrings in the source code.
 
 **If you are developing new functionality in `task_executor` or `task_monitor`, please copy the precedent set by existing code in writing docstrings so that the API documentation can remain parse-able**
@@ -77,3 +79,17 @@ The most frequent update that is likely to happen to the documentation is with t
 1. Define your action `class`, which should derive from [`AbstractStep`](task_executor/src/task_executor/abstract_step.py). Make sure to follow the precedent set by the actions that are already in the code base
 1. Add the action's name and `class` to [`__init__.py`](task_executor/src/task_executor/actions/__init__.py)
 1. Add the action to the actions documentation page [`task_executor.actions.rst`](docs/source/task_executor.actions.rst). Follow the syntax of other actions that are already in that file.
+
+
+## TODO
+
+Some of the things that would be good to figure out, but I don't know how to achieve, or do not have the bandwidth for:
+
+- Figure out a [`dynamic_reconfigure`](http://wiki.ros.org/dynamic_reconfigure)-like API to the reload functionality provided by a lot of the servers. Unfortunately, `dynamic_reconfigure` itself does not allow for the dynamic reconfiguration of dictionaries or lists at the moment.
+- Make the monitoring and executive levels truly general; among the biggest problems are:
+    - Beliefs: automatically including beliefs in the messages, and updating the appropriate belief as part of the task
+    - Database: including and parsing custom data types from the database dictionary
+    - Actions: including primitive actions into the global module search path for the actions. We have to have the same actions available via direct access as are available through the task execution server
+    - Ops: ops need to be more than just predefined functions within the package
+    - Background monitors: Background monitors that are tracked by the execution monitor should be an arbitrary list of monitors
+- Include a resource aware manager, like [Playful](https://github.com/vincentberenz/playful), as a concurrent execution manager

@@ -168,7 +168,7 @@ class RemoteController(object):
         time.sleep(2)
         sys.exit(0)
 
-    def enable(self, req=None):
+    def enable(self, req):
         self._current_error = req.request
         if self._current_error.context:
             self._current_error.context = pickle.loads(self._current_error.context)

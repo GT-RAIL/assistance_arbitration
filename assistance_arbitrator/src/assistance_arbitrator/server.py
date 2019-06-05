@@ -12,32 +12,31 @@ import actionlib
 
 from actionlib_msgs.msg import GoalStatus
 from assistance_msgs.msg import RequestAssistanceAction, RequestAssistanceFeedback
+from std_srvs.srv import Trigger, TriggerResponse
+
+from assistance_msgs import msg_utils
 
 
 # The server arbitrates who to send the request to
 
 class AssistanceArbitrationServer(object):
     """
-    Given a request for assistance, and some TBD models, the server uses
-    the logic in this class to decide whether to request help from local or from
-    remote human.
+    Given a request for assistance, and some available methods of resolving the
+    request, the server uses some TBD logic to decide who to contact
     """
-
-    # The names of the strategies
-    LOCAL_STRATEGY_ACTION_SERVER = "local_strategy"
-    REMOTE_STRATEGY_ACTION_SERVER = "remote_strategy"
 
     # Parameters for the server's behaviour
     CONNECTION_CHECK_DURATION = 0.5  # The seconds to wait before checking for action client connection. Must be > 0.1
 
     def __init__(self):
         # Create something to hold the action clients that we will be using
-        self._strategy_clients = {
-            AssistanceArbitrationServer.LOCAL_STRATEGY_ACTION_SERVER: None,
-            AssistanceArbitrationServer.REMOTE_STRATEGY_ACTION_SERVER: None,
-        }
+        self._strategy_clients = []
         self._strategy_connection_timers = {}
         self._strategy_clients_lock = Lock()
+
+        # Provide a service to reload the list of strategies, and then reload
+        self._reload_service = rospy.Service('~reload', Trigger, self.reload)
+        self.reload(None)
 
         # Instantiate the action server to provide the arbitration
         self._server = actionlib.SimpleActionServer(
@@ -48,40 +47,50 @@ class AssistanceArbitrationServer(object):
         )
 
     def start(self):
-        # Start the connections to the different strategies
-        for strategy_name in self._strategy_clients.keys():
-            self._start_connect_to_strategy(strategy_name)
-
         # Start the arbitration node itself
         self._server.start()
         rospy.loginfo("Assistance arbitration node ready...")
 
-    def _start_connect_to_strategy(self, strategy_name):
-        rospy.loginfo("Connecting to {}...".format(strategy_name))
+    def reload(self, req):
+        strategy_servers = rospy.get_param('~strategies')
+        with self._strategy_clients_lock:
+            self._strategy_clients = [
+                { 'name': server, 'client': None }
+                for server in strategy_servers
+            ]
+
+        # Start the connections to the different strategies
+        for strategy in self._strategy_clients:
+            self._start_connect_to_strategy(strategy)
+
+        return TriggerResponse(success=True)
+
+    def _start_connect_to_strategy(self, strategy):
+        rospy.loginfo("Connecting to {}...".format(strategy['name']))
 
         # Create an action client
-        strategy_client = actionlib.SimpleActionClient(strategy_name, RequestAssistanceAction)
+        strategy_client = actionlib.SimpleActionClient(strategy['name'], RequestAssistanceAction)
 
         # Start the periodic checks to see if the client has connected
-        self._strategy_connection_timers[strategy_name] = rospy.Timer(
+        self._strategy_connection_timers[strategy['name']] = rospy.Timer(
             rospy.Duration(AssistanceArbitrationServer.CONNECTION_CHECK_DURATION),
-            self._check_strategy_connection(strategy_name, strategy_client),
+            self._check_strategy_connection(strategy, strategy_client),
             oneshot=False
         )
 
-    def _check_strategy_connection(self, strategy_name, strategy_client):
+    def _check_strategy_connection(self, strategy, strategy_client):
         # Create a callback that will be executed for the connection check
         def timer_callback(evt):
-            rospy.logdebug("...checking connection to {}...".format(strategy_name))
+            rospy.logdebug("...checking connection to {}...".format(strategy['name']))
             if strategy_client.wait_for_server(rospy.Duration(0.1)):
                 # Stop the timer from firing
-                self._strategy_connection_timers[strategy_name].shutdown()
+                self._strategy_connection_timers[strategy['name']].shutdown()
 
                 # Set the strategy client
                 with self._strategy_clients_lock:
-                    self._strategy_clients[strategy_name] = strategy_client
+                    strategy['client'] = strategy_client
 
-                rospy.loginfo("...{} connected".format(strategy_name))
+                rospy.loginfo("...{} connected".format(strategy['name']))
 
         # Return this callback
         return timer_callback
@@ -95,9 +104,9 @@ class AssistanceArbitrationServer(object):
         result = self._server.get_default_result()
         strategy_name, strategy_client = None, None
         with self._strategy_clients_lock:
-            for name, client in self._strategy_clients.iteritems():
-                if client is not None:
-                    strategy_name, strategy_client = name, client
+            for strategy in self._strategy_clients.iteritems():
+                if strategy['client'] is not None:
+                    strategy_name, strategy_client = strategy['name'], strategy['client']
                     break
 
         # If we do have a valid strategy
@@ -117,7 +126,6 @@ class AssistanceArbitrationServer(object):
             result = strategy_client.get_result()
         else:
             # Otherwise, we are aborting the request and sending it back
-            result.context = goal.context
             result.stats.request_complete = rospy.Time.now()
 
         # Some extra processing of all results, in case it is needed
