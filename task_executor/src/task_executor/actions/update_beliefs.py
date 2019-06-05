@@ -24,7 +24,7 @@ class UpdateBeliefsAction(AbstractStep):
 
         Args:
             beliefs (dict) : a dictionary of known \
-                ``task_execution_msgs/BeliefKeys`` and the associated values, \
+                ``assistance_msgs/BeliefKeys`` and the associated values, \
                 which are floats between 0 and 1, that they should be set to
 
         .. seealso::

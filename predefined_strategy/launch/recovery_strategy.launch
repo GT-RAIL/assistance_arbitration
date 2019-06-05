@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="sim" default="false" />
+
+  <!-- Launch the recovery server -->
+  <node name="predefined_strategy" pkg="predefined_strategy" type="server_node.py" output="screen" />
+</launch>

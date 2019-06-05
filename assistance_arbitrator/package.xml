@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>assistance_arbitrator</name>
-  <version>0.0.1</version>
+  <version>1.0.0</version>
   <description>The assistance_arbitrator package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
@@ -53,18 +53,6 @@
   <depend>actionlib</depend>
   <depend>assistance_msgs</depend>
   <depend>rospy</depend>
-
-  <exec_depend>control_msgs</exec_depend>
-  <exec_depend>fetch_driver_msgs</exec_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>local_strategy</exec_depend>
-  <exec_depend>moveit_msgs</exec_depend>
-  <exec_depend>nav_msgs</exec_depend>
-  <exec_depend>power_msgs</exec_depend>
-  <exec_depend>remote_strategy</exec_depend>
-  <exec_depend>ros_topology_msgs</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>visualization_msgs</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

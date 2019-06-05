@@ -98,11 +98,11 @@ class ArmAction(AbstractStep):
                     * `gripper_poses`, get a ``geometry_msgs/PoseStamped`` \
                         from :const:`ARM_GRIPPER_POSES_SERVICE_NAME` and move \
                         the end effector to that pose
-                    * `joint_poses`, get a ``task_execution_msgs/ArmJointPose`` \
+                    * `joint_poses`, get a ``assistance_msgs/ArmJointPose`` \
                         from :const:`ARM_JOINT_POSES_SERVICE_NAME` and move the \
                         joints to the desired pose
                     * `trajectories`, get a list of \
-                        ``task_execution_msgs/ArmJointPose`` from \
+                        ``assistance_msgs/ArmJointPose`` from \
                         :const:`TRAJECTORIES_SERVICE_NAME` and move the joints \
                         through the series of desired poses
                 * list, tuple. Then if the list is of
@@ -198,6 +198,9 @@ class ArmAction(AbstractStep):
                         attempt_num=attempt_num
                     )
                     raise StopIteration()
+                elif len(plan.joint_trajectory.points) == 0 \
+                        and len(plan.multi_dof_joint_trajectory.points) == 0:
+                    continue
 
                 # Then move
                 success = self._move_group.execute(plan, wait=True)

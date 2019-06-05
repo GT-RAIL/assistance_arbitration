@@ -1,0 +1,64 @@
+- git:
+    local-name: asr_approx_mvbb
+    uri: https://github.com/asr-ros/asr_approx_mvbb.git
+    version: master
+- git:
+    local-name: fetch_gazebo
+    uri: git@github.com:GT-RAIL/fetch_gazebo.git
+    version: banerjs/assistance-arbitration
+- git:
+    local-name: fetch_ros
+    uri: git@github.com:GT-RAIL/fetch_ros.git
+    version: banerjs/assistance-arbitration
+- git:
+    local-name: hlpr_speech
+    uri: git@github.com:HLP-R/hlpr_speech.git
+    version: banerjs/assistance-arbitration
+- git:
+    local-name: octomap/octomap
+    uri: https://github.com/ros-gbp/octomap-release.git
+    version: release/melodic/octomap/1.9.0-1
+- git:
+    local-name: octomap_mapping/octomap_mapping
+    uri: https://github.com/ros-gbp/octomap_mapping-release.git
+    version: release/melodic/octomap_mapping/0.6.3-0
+- git:
+    local-name: octomap_mapping/octomap_server
+    uri: https://github.com/ros-gbp/octomap_mapping-release.git
+    version: release/melodic/octomap_server/0.6.3-0
+- git:
+    local-name: octomap_msgs
+    uri: https://github.com/ros-gbp/octomap_msgs-release.git
+    version: release/melodic/octomap_msgs/0.3.3-1
+- git:
+    local-name: octomap_ros
+    uri: https://github.com/ros-gbp/octomap_ros-release.git
+    version: release/melodic/octomap_ros/0.4.0-0
+- git:
+    local-name: octomap_rviz_plugins
+    uri: https://github.com/OctoMap/octomap_rviz_plugins.git
+    version: kinetic-devel
+- git:
+    local-name: rail_agile
+    uri: git@github.com:GT-RAIL/rail_agile.git
+    version: melodic-devel-fast-build
+- git:
+    local-name: rail_grasp_calculation
+    uri: git@github.com:GT-RAIL/rail_grasp_calculation.git
+    version: melodic-devel
+- git:
+    local-name: rail_manipulation_msgs
+    uri: git@github.com:GT-RAIL/rail_manipulation_msgs.git
+    version: melodic-devel
+- git:
+    local-name: rail_object_detection_msgs
+    uri: git@github.com:gt-rail-release/rail_object_detection-release.git
+    version: release/indigo/rail_object_detection_msgs/3.0.2-0
+- git:
+    local-name: rail_people_detection
+    uri: git@github.com:GT-RAIL/rail_people_detection.git
+    version: banerjs/assistance-arbitration
+- git:
+    local-name: rail_segmentation
+    uri: git@github.com:GT-RAIL/rail_segmentation.git
+    version: melodic-devel

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>task_executor</name>
-  <version>0.0.2</version>
+  <version>1.0.0</version>
   <description>The task_executor package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
@@ -51,24 +51,8 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>actionlib</depend>
-  <depend>actionlib_msgs</depend>
   <depend>assistance_msgs</depend>
   <depend>rospy</depend>
-
-  <exec_depend>control_msgs</exec_depend>
-  <exec_depend>fetch_grasp_suggestion</exec_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>hlpr_speech_msgs</exec_depend>
-  <exec_depend>move_base_msgs</exec_depend>
-  <exec_depend>rail_manipulation_msgs</exec_depend>
-  <exec_depend>sensor_msgs</exec_depend>
-  <exec_depend>sound_interface</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>std_srvs</exec_depend>
-  <exec_depend>trajectory_msgs</exec_depend>
-
-  <exec_depend>hlpr_speech_recognition</exec_depend>
-  <exec_depend>simulation_helpers</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
