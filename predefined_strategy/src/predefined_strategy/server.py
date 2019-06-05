@@ -19,13 +19,13 @@ from assistance_msgs.msg import (RequestAssistanceAction,
 from predefined_strategy.recovery_strategies import RecoveryStrategies
 
 
-# The server arbitrates who to send the request to
+# The server decides how to deal with the error
 
 class PredefinedRecoveryServer(object):
     """
-    Given a request for assistance, and some TBD models, the server uses
-    the logic in this class to decide whether to request help from local or from
-    remote human.
+    Given an error in the exective level, the server looks through a list of
+    predefined errors and decides how to handle the error based on the
+    predefined rules
     """
 
     RECOVERY_ACTION_SERVER = "recovery_executor"
@@ -68,7 +68,7 @@ class PredefinedRecoveryServer(object):
 
         # Start the monitor node itself
         self._server.start()
-        rospy.loginfo("Task monitor node ready...")
+        rospy.loginfo("Predefined strategy node ready...")
 
     def _start_recovery_strategies_init(self):
         def timer_callback(evt):
@@ -114,7 +114,7 @@ class PredefinedRecoveryServer(object):
         """Arbitrate an incoming request for assistance"""
         request_received = rospy.Time.now()
 
-        # Pick the strategy
+        # Pick the client to execute recoveries if one is available
         status = GoalStatus.ABORTED
         result = self._server.get_default_result()
         client_name, recovery_client = None, None
@@ -124,7 +124,7 @@ class PredefinedRecoveryServer(object):
                     client_name, recovery_client = name, client
                     break
 
-        # If we do have a valid strategy
+        # If we do have a valid potential client
         if recovery_client is not None:
             # Unpickle the context
             goal.context = pickle.loads(goal.context)
