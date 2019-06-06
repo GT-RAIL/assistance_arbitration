@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Creates the registry of action definitions to actions to use
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 import os
 import sys
