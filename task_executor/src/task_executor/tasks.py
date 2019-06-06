@@ -3,13 +3,34 @@
 
 from __future__ import print_function, division
 
+import parser
+
 import rospy
 
 from assistance_msgs.msg import RequestAssistanceGoal, RequestAssistanceResult
 
 from assistance_msgs import msg_utils
 from task_executor.abstract_step import AbstractStep
-from task_executor import ops
+
+
+# Helper class to provide class-like access to a dictionary
+
+class objdict(dict):
+    """Provides class-like access to a dictionary"""
+    def __getattr__(self, name):
+        if name in self:
+            return self[name]
+        else:
+            raise AttributeError("No such attribute: " + name)
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+    def __delattr__(self, name):
+        if name in self:
+            del self[name]
+        else:
+            raise AttributeError("No such attribute: " + name)
 
 
 # A class detailing how a `Task` should execute
@@ -136,7 +157,7 @@ class Task(AbstractStep):
         # Specific to this task
         self.params = params
         self.var = var
-        self.var_values = dict()
+        self.var_values = objdict()
         self.steps = steps
 
         # Flag to indicate if the task is stopped
@@ -167,6 +188,11 @@ class Task(AbstractStep):
 
             :meth:`task_executor.abstract_step.AbstractStep.run`
         """
+
+        # Convert to an objdict
+        params = objdict(params)
+
+        # Start the execution
         self.step_idx = context.start_idx
         rospy.loginfo("Task {}: EXECUTING from step {}.".format(self.name, self.step_idx))
 
@@ -179,7 +205,7 @@ class Task(AbstractStep):
             raise KeyError(self.name, "Unexpected Params", self.params, params)
 
         # Setup to run the task
-        var = dict() if context.restart_child else self.var_values
+        var = objdict() if context.restart_child else self.var_values
         self._stopped = False
 
         # Go through each step of the specified task plan as appropriate
@@ -200,7 +226,7 @@ class Task(AbstractStep):
             # defs accordingly. current_step_def remains unchanged here
             if step.has_key('loop'):
                 condition = step_params['condition']
-                condition, condition_str = self._resolve_condition(condition, var, params)
+                condition, condition_str = self._resolve_expr(condition, var, params)
                 rospy.loginfo("Loop {}: {} -> {}".format(step_name, condition_str, condition))
 
                 # We only loop while true. If done, move to next step
@@ -216,7 +242,7 @@ class Task(AbstractStep):
                 }
             elif step.has_key('choice'):
                 condition = step_params['condition']
-                condition, condition_str = self._resolve_condition(condition, var, params)
+                condition, condition_str = self._resolve_expr(condition, var, params)
                 rospy.loginfo("Choice {}: {} -> {}".format(step_name, condition_str, condition))
 
                 # Based on the condition, update the step definition
@@ -241,11 +267,11 @@ class Task(AbstractStep):
             # Check to see if this is an op. If so, run the op
             if step.has_key('op'):
                 self.current_executor = None
-                variables = getattr(ops, step['op'])(
-                    current_variables=var,
-                    current_params=params,
-                    **step_params
-                )
+                expr = step_params['expr']
+                var_name = step_params['var_name']
+                rospy.loginfo("Op {}: {} = {}".format(step_name, var_name, expr))
+                result, _ = self._resolve_expr(expr, var, params)
+                variables[var_name] = result
 
             # Otherwise, execute the action/task:
             else:
@@ -355,7 +381,7 @@ class Task(AbstractStep):
         self.step_idx = -1
         self.current_step_def = self.current_executor = None
         yield self.set_succeeded(**{var_name: self.var_values[var_name] for var_name in self.var})
-        self.var_values = dict()  # Reset state if the task was successful
+        self.var_values = objdict()  # Reset state if the task was successful
 
     def stop(self):
         """Preempt the task"""
@@ -432,14 +458,12 @@ class Task(AbstractStep):
         # Otherwise, this param should be used as is
         return param
 
-    def _resolve_condition(self, condition_str, var, task_params):
-        if isinstance(condition_str, str) and ' ' in condition_str:
-            conditions = condition_str.split()
-            conditions = [self._resolve_param(c, var, task_params) for c in conditions]
-            condition_str = " ".join([str(c) for c in conditions])
-            condition = eval(condition_str)
-
+    def _resolve_expr(self, expr_str, var, task_params):
+        if isinstance(expr_str, str):
+            parsed_expr = parser.expr(expr_str)
+            compiled = parsed_expr.compile()
+            result = eval(compiled, {}, {"params": task_params, "var": var})
         else:
-            condition = condition_str
+            result = expr_str
 
-        return condition, condition_str
+        return result, expr_str
