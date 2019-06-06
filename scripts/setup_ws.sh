@@ -20,6 +20,7 @@ sudo apt-get install -y \
         ros-melodic-easy-markers \
         ros-melodic-effort-controllers \
         ros-melodic-fetch-driver-msgs \
+        ros-melodic-joy \
         ros-melodic-kalman-filter \
         ros-melodic-map-server \
         ros-melodic-move-base \

@@ -19,7 +19,6 @@ from actionlib_msgs.msg import GoalStatus
 from assistance_msgs.msg import ExecuteAction, ExecuteGoal
 
 from assistance_msgs import msg_utils
-from task_executor.tasks import Task
 
 
 yaml = YAML(typ='safe')
@@ -31,11 +30,18 @@ def _goal_status_from_code(status):
 
 
 def _get_arg_parser():
-    # First load the list of available tasks
+    # First load the list of available tasks. Try from the param server and if
+    # that fails, then attempt to do so from the default file
+    default_tasks_param = "/task_executor/tasks"
     default_tasks_file = os.path.join(rospkg.RosPack().get_path('task_executor'),
                                       'config/tasks.yaml')
-    with open(default_tasks_file, 'r') as fd:
-        tasks = yaml.load(fd)['tasks']
+    if rospy.get_param(default_tasks_param, None) is not None:
+        tasks = rospy.get_param(default_tasks_param)
+    elif os.path.isfile(default_tasks_file):
+        with open(default_tasks_file, 'r') as fd:
+            tasks = yaml.load(fd)['tasks']
+    else:
+        raise ValueError("Unable to load a tasks file, exiting!")
 
     # Then create the parser
     parser = argparse.ArgumentParser()

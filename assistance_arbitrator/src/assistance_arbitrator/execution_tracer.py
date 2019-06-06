@@ -65,11 +65,7 @@ class Tracer(object):
     TIME_EVENT = 255
 
     # Events to ignore
-    EXCLUDE_BELIEF_EVENTS = set([
-        BeliefKeys.CUBE_AT_PICKUP_2,
-        BeliefKeys.DOOR_2_OPEN,
-        BeliefKeys.DOOR_3_OPEN,
-    ])
+    EXCLUDE_BELIEF_EVENTS = set([])
     EXCLUDE_MONITOR_EVENTS = set([
         'diagnostics_update: Charger',
         'diagnostics_update: Gripper IMU Accelerometer',

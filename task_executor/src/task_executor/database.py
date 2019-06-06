@@ -6,13 +6,16 @@ from __future__ import print_function, division
 import rospy
 
 from geometry_msgs.msg import PoseStamped
-from assistance_msgs.msg import Waypoint, Bounds, ObjectConstraints, ArmJointPose
+from manipulation_actions.msg import ChallengeObject
+from assistance_msgs.msg import Waypoint, Bounds, ObjectConstraints, ArmJointPose, PartsAtLocation
 from std_srvs.srv import Trigger, TriggerResponse
 from assistance_msgs.srv import (GetWaypoints, GetWaypointsResponse,
                                  GetObjectConstraints, GetObjectConstraintsResponse,
                                  GetArmGripperPose, GetArmGripperPoseResponse,
                                  GetArmJointPose, GetArmJointPoseResponse,
-                                 GetTrajectory, GetTrajectoryResponse)
+                                 GetTrajectory, GetTrajectoryResponse,
+                                 GetPartsAtLocation, GetPartsAtLocationResponse,
+                                 GetSemanticLocations, GetSemanticLocationsResponse)
 
 
 # The actual database node
