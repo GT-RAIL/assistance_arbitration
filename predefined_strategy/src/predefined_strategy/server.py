@@ -4,6 +4,7 @@
 from __future__ import print_function, division
 
 import pickle
+import importlib
 
 from threading import Lock
 
@@ -43,12 +44,25 @@ class PredefinedRecoveryServer(object):
         self._recovery_clients_lock = Lock()
 
         # Initialize the lookup table of recovery modes
-        self._recovery_strategies = RecoveryStrategies(
-            rospy.get_param("/{}/{}".format(
+        recovery_task_defs = rospy.get_param(
+            "/{}/{}".format(
                 PredefinedRecoveryServer.RECOVERY_ACTION_SERVER,
                 PredefinedRecoveryServer.RECOVERY_TASKS_PARAM
-            ), {})
+            ),
+            {}
         )
+
+        # Try to fetch the desired recovery strategies. Otherwise, use the
+        # default
+        strategies_class = RecoveryStrategies
+        try:
+            pkgname = rospy.get_param('~recovery_strategies')
+            pkg = importlib.import_module(pkgname)
+            strategies_class = getattr(pkg, "RecoveryStrategies")
+        except Exception as e:
+            rospy.logwarn("Predefined: Unable to fetch recoveries - {}".format(e))
+
+        self._recovery_strategies = strategies_class(recovery_task_defs)
 
         # Instantiate the action server to provide the arbitration
         self._server = actionlib.SimpleActionServer(
