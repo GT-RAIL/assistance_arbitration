@@ -31,6 +31,8 @@ class DataLogger(object):
         rospkg.RosPack().get_path('assistance_arbitrator'),
         'config/datalogger.yaml'
     )
+    CONFIG_PARAM = "~config"
+
     DATA_DIRECTORY = os.path.join(
         rospkg.RosPack().get_path('assistance_arbitrator'),
         'data',
@@ -86,8 +88,15 @@ class DataLogger(object):
             return
 
         cmd = copy.copy(DataLogger.ROSBAG_CMD)
-        with open(DataLogger.CONFIG_FILENAME, 'r') as fd:
-            self.config = yaml.load(fd)
+
+        # Get the configuration
+        if rospy.get_param(DataLogger.CONFIG_PARAM, None) is not None:
+            self.config = rospy.get_param(DataLogger.CONFIG_PARAM)
+        elif os.path.isfile(DataLogger.CONFIG_FILENAME):
+            with open(DataLogger.CONFIG_FILENAME, 'r') as fd:
+                self.config = yaml.load(fd)
+        else:
+            raise ValueError("Unable to load a configuration file, exiting!")
 
         # Update the cmd
         if len(self.config['include_regex']) > 0:
