@@ -17,9 +17,4 @@
   <node name="task_executor" pkg="task_executor" type="task_node.py" output="screen">
     <rosparam command="load" file="$(arg task_config)" />
   </node>
-
-  <!-- The recovery execution node -->
-  <node name="recovery_executor" pkg="task_executor" type="recovery_task_node.py" output="screen">
-    <rosparam command="load" file="$(arg task_config)" />
-  </node>
 </launch>
