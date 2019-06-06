@@ -104,7 +104,7 @@ class AssistanceArbitrationServer(object):
         result = self._server.get_default_result()
         strategy_name, strategy_client = None, None
         with self._strategy_clients_lock:
-            for strategy in self._strategy_clients.iteritems():
+            for strategy in self._strategy_clients:
                 if strategy['client'] is not None:
                     strategy_name, strategy_client = strategy['name'], strategy['client']
                     break
