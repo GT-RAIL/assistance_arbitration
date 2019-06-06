@@ -89,7 +89,5 @@ Some of the things that would be good to figure out, but I don't know how to ach
 - Make the monitoring and executive levels truly general; among the biggest problems are:
     - Beliefs: automatically including beliefs in the messages, and updating the appropriate belief as part of the task
     - Database: including and parsing custom data types from the database dictionary
-    - Actions: including primitive actions into the global module search path for the actions. We have to have the same actions available via direct access as are available through the task execution server
-    - Ops: ops need to be more than just predefined functions within the package
     - Background monitors: Background monitors that are tracked by the execution monitor should be an arbitrary list of monitors
 - Include a resource aware manager, like [Playful](https://github.com/vincentberenz/playful), as a concurrent execution manager
