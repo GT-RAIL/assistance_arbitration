@@ -155,6 +155,9 @@
       <!-- Robot Driver -->
       <node name="robot_driver" pkg="simulation_helpers" type="simulated_robot_driver.py" />
 
+      <!-- A point cloud diagnostic -->
+      <node name="point_cloud_diagnostic" pkg="simulation_helpers" type="point_cloud_diagnostic.py" />
+
       <!-- Diagnostics -->
       <node name="diagnostic_aggregator" pkg="diagnostic_aggregator" type="aggregator_node" args="CPP">
         <rosparam command="load" file="$(find simulation_helpers)/config/analyzers.yaml" />
