@@ -14,7 +14,7 @@ from nav_msgs.msg import OccupancyGrid
 from assistance_msgs.msg import MonitorMetadata
 
 from assistance_arbitrator.monitoring import AbstractFaultMonitor
-from assistance_arbitrator.utils import costmap_utils
+from .utils import costmap_utils
 
 
 # The class definition

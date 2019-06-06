@@ -1,0 +1,5 @@
+# The list of strategy servers to attempt in the event of a failure
+strategies:
+  - predefined_strategy
+  - remote_strategy
+  - local_strategy
