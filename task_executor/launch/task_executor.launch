@@ -3,8 +3,7 @@
   <arg name="sim" default="false" />
 
   <arg name="task_config" default="$(find task_executor)/config/tasks.yaml" />
-  <arg name="data_config" default="$(find task_executor)/config/simulation.yaml" if="$(arg sim)" />
-  <arg name="data_config" default="$(find task_executor)/config/robot.yaml" unless="$(arg sim)" />
+  <arg name="data_config" default="$(find task_executor)/config/data.yaml" />
 
   <!-- The database node -->
   <node name="database" pkg="task_executor" type="database_node.py">
@@ -19,8 +18,8 @@
     <rosparam command="load" file="$(arg task_config)" />
   </node>
 
-  <!-- The idle behaviour node -->
-  <node name="idle_executor" pkg="task_executor" type="idle_behaviour_node.py" output="screen">
+  <!-- The recovery execution node -->
+  <node name="recovery_executor" pkg="task_executor" type="recovery_task_node.py" output="screen">
     <rosparam command="load" file="$(arg task_config)" />
   </node>
 </launch>
