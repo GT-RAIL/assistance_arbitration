@@ -11,7 +11,7 @@ from task_executor.actions import default_actions_dict, Actions
 
 def main():
     rospy.init_node('recovery_executor')
-    server = TaskServer(connect_monitor=False)
+    server = TaskServer(connect_arbitrator=False)
     server.start()
     rospy.spin()
 

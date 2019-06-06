@@ -16,19 +16,21 @@
   <arg name="speech" default="$(arg start_all)" />
   <arg name="task_executor" default="$(arg start_all)" />
   <arg name="arbitrator" default="$(arg task_executor)" />
-  <arg name="local_strategy" default="$(arg task_executor)" />
+  <arg name="predefined_strategy" default="$(arg task_executor)" />
   <arg name="remote_strategy" default="$(arg task_executor)" />
+  <arg name="local_strategy" default="$(arg task_executor)" />
 
   <!-- Common args -->
   <arg name="cloud_topic" value="/head_camera/depth_registered/points" />
   <arg name="grasp_classifier_file" value="random_forest.pkl" />
-  <arg name="segmentation_config" value="$(find task_executor)/config/zones.yaml" />
-  <arg name="task_config" value="$(find task_executor)/config/tasks.yaml" />
+  <arg name="segmentation_config" value="$(find fetch_tasks)/config/zones.yaml" />
 
-  <!-- Simulation vs. non simulation args -->
-  <arg name="data_config" value="$(find task_executor)/config/data.yaml" />
-  <arg name="map_file" value="$(find fetch_gazebo_demo)/maps/test_zone.yaml" if="$(arg sim)" />
-  <arg name="map_file" value="$(find task_executor)/maps/map.yaml" unless="$(arg sim)" />
+  <arg name="map_file" value="$(find fetch_gazebo_demo)/maps/test_zone.yaml" />
+
+  <arg name="task_config" value="$(find fetch_tasks)/config/tasks.yaml" />
+  <arg name="data_config" value="$(find fetch_tasks)/config/data.yaml" />
+  <arg name="arbitrator_config" value="$(find fetch_tasks)/config/arbitrator.yaml" />
+  <arg name="predefined_strategy_config" value="$(find fetch_tasks)/config/predefined_strategy.yaml" />
 
   <!-- Other args -->
   <arg name="speech_gui" default="$(arg sim)" />
@@ -107,10 +109,29 @@
     <arg name="sim" value="$(arg sim)" />
   </include>
 
+  <!-- Predefined recovery strategy -->
+  <group if="$(arg predefined_strategy)">
+    <node name="recovery_executor" pkg="fetch_tasks" type="recovery_task_node.py" output="screen">
+      <rosparam command="load" file="$(arg task_config)" />
+    </node>
+
+    <include file="$(find predefined_strategy)/launch/recovery_strategy.launch">
+      <arg name="sim" value="$(arg sim)" />
+      <arg name="strategy_config" value="$(arg predefined_strategy_config)" />
+    </include>
+  </group>
+
   <!-- Assistance arbitration -->
-  <include file="$(find assistance_arbitrator)/launch/arbitrator.launch" if="$(arg arbitrator)">
-    <arg name="sim" value="$(arg sim)" />
-  </include>
+  <group if="$(arg arbitrator)">
+    <include file="$(find assistance_arbitrator)/launch/arbitrator.launch">
+      <arg name="sim" value="$(arg sim)" />
+      <arg name="arbitrator_config" value="$(arg arbitrator_config)" />
+    </include>
+
+    <include file="$(find fetch_tasks)/launch/monitors.launch">
+      <arg name="sim" value="$(arg sim)" />
+    </include>
+  </group>
 
   <!-- Task Execution -->
   <group if="$(arg task_executor)">
@@ -119,6 +140,11 @@
       <arg name="task_config" value="$(arg task_config)" />
       <arg name="data_config" value="$(arg data_config)" />
     </include>
+
+    <!-- The idle behaviour node -->
+    <node name="idle_executor" pkg="fetch_tasks" type="idle_behaviour_node.py" output="screen">
+      <rosparam command="load" file="$(arg task_config)" />
+    </node>
 
     <!-- Simulation helpers if this is in simulation -->
     <group if="$(arg sim)">
