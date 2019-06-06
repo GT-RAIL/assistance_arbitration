@@ -22,37 +22,14 @@ pkgpath = os.path.dirname(__file__)
 action_names = action_class_names = []
 default_actions_dict = {}
 
-try:
-    # Fetch the name of the target package from the global ROS param
-    pkgname = rospy.get_param('/task_executor/actions')
-    pkg = importlib.import_module(pkgname)
-    pkgpath = os.path.dirname(pkg.__file__)
 
-    # Check to see if the hard work has already been done for us
-    default_actions_dict = getattr(pkg, "default_actions_dict", {})
-    action_names = getattr(pkg, "action_names", [])
-    action_class_names = getattr(pkg, "action_class_names", [])
+def _populate_default_actions():
+    """Populate the default actions if they were not already defined"""
+    global action_names, action_class_names, default_actions_dict
 
-    # If we have to do the hard work, then make sure that the target package
-    # is indeed a directory
-    if len(default_actions_dict) == 0:
-        assert os.path.isdir(pkgpath), "{} is not a directory! Cannot parse actions".format(pkgpath)
-except Exception as e:
-    print(
-        "Actions: Exception({}) fetching external actions - {}".format(type(e).__name__, e),
-        file=sys.stderr
-    )
-finally:
-    if len(default_actions_dict) == 0:
-        print("Actions: Fetching actions from {}".format(pkgpath))
-    else:
-        print("Actions: {} actions fetched".format(len(default_actions_dict)))
-
-# The actual fetch code in case the default_actions_dict was not already defined
-if len(default_actions_dict) == 0:
     # First find all the packages in the directory
     found_packages = sorted(
-        [(i,x) for i, x, _ in pkgutil.iter_modules([pkgpath], "{}.".format(pkgname))],
+        [(i, x) for i, x, _ in pkgutil.iter_modules([pkgpath], "{}.".format(pkgname))],
         key=lambda t: t[-1]
     )
     action_names = [x.split('.')[-1] for _, x in found_packages]
@@ -71,12 +48,33 @@ if len(default_actions_dict) == 0:
             module = importer.find_module(found_packages[idx][1]).load_module(found_packages[idx][1])
             action = getattr(module, action_class_names[idx])
         except (ImportError, AttributeError) as e:
-            print("Exception({}) for {}: {}".format(type(e).__name__, name, e), file=sys.stderr)
+            print("Actions: Exception({}) importing {} - {}".format(type(e).__name__, name, e), file=sys.stderr)
         else:
             default_actions_dict[name] = action
 
-    # Print out the number of actions that we're working with here
-    print("Actions: {} actions fetched".format(len(default_actions_dict)))
+
+try:
+    # Fetch the name of the target package from the global ROS param
+    pkgname = rospy.get_param('/task_executor/actions')
+    pkg = importlib.import_module(pkgname)
+    pkgpath = os.path.dirname(pkg.__file__)
+
+    # Check to see if the hard work has already been done for us
+    default_actions_dict = getattr(pkg, "default_actions_dict", {})
+    action_names = getattr(pkg, "action_names", [])
+    action_class_names = getattr(pkg, "action_class_names", [])
+
+    # If we have to do the hard work, then make sure that the target package
+    # is indeed a directory
+    if len(default_actions_dict) == 0 or len(action_names) == 0 or len(action_class_names) == 0:
+        assert os.path.isdir(pkgpath), "{} is not a directory! Cannot parse actions".format(pkgpath)
+except Exception as e:
+    print("Actions: Exception({}) fetching external actions - {}".format(type(e).__name__, e), file=sys.stderr)
+finally:
+    if len(default_actions_dict) == 0 or len(action_names) == 0 or len(action_class_names) == 0:
+        _populate_default_actions()
+
+print("Actions: {}/{} actions imported".format(len(default_actions_dict), len(action_names)))
 
 
 # Finally, we can initialize the container for all the actions
