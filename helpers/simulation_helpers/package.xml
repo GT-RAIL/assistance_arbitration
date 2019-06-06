@@ -53,6 +53,7 @@
   <depend>diagnostic_msgs</depend>
   <depend>diagnostic_updater</depend>
   <depend>fetch_driver_msgs</depend>
+  <depend>fetchit_challenge</depend>
   <depend>geometry_msgs</depend>
   <depend>rail_people_detection_msgs</depend>
   <depend>rospy</depend>

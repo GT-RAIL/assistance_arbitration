@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>assistance_msgs</name>
+  <name>fetch_tasks</name>
   <version>1.0.0</version>
-  <description>The assistance_msgs package</description>
+  <description>The fetch_tasks package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/assistance_msgs</url> -->
+  <!-- <url type="website">http://wiki.ros.org/fetch_tasks</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -49,16 +49,14 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-
-  <depend>actionlib_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>manipulation_actions</depend>
-  <depend>rail_manipulation_msgs</depend>
+  <depend>actionlib</depend>
+  <depend>assistance_msgs</depend>
+  <depend>predefined_strategy</depend>
   <depend>rospy</depend>
-  <depend>std_msgs</depend>
+  <depend>task_executor</depend>
 
-  <build_depend>message_generation</build_depend>
-  <exec_depend>message_runtime</exec_depend>
+  <!-- All the various actions have run_depend that should go here -->
+  <!-- TODO -->
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

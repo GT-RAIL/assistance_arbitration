@@ -8,7 +8,6 @@ import rospy
 from task_executor.abstract_step import AbstractStep
 
 from fetch_driver_msgs.msg import GripperState
-from assistance_msgs.msg import BeliefKeys
 
 
 class VerifyGraspAction(AbstractStep):
@@ -69,9 +68,6 @@ class VerifyGraspAction(AbstractStep):
             gripper_state.joints[0].position > VerifyGraspAction.GRIPPER_CLOSED_VALUE  # gripper not fully closed
             and (self._in_simulation or gripper_state.joints[0].effort > 0)  # effort > 0 unless it's simulation
         )
-
-        # Update the beliefs
-        self.update_beliefs({ BeliefKeys.GRIPPER_HAS_OBJECT: grasped })
 
         # Return according to the specification
         if not grasped and abort_on_false:

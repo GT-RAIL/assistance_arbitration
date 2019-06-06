@@ -8,6 +8,7 @@ import pickle
 import rospy
 import actionlib
 
+from assistance_msgs import msg_utils
 from sound_interface import SoundClient
 from task_executor.abstract_step import AbstractStep
 from task_executor.actions import get_default_actions
@@ -150,7 +151,7 @@ class TaskServer(object):
                 # If the task has been preempted, then stop executing it
                 if task.is_preempted():
                     rospy.logwarn("Task {}: PREEMPTED. Context: {}".format(
-                        task.name, Task.pprint_variables(variables)
+                        task.name, msg_utils.pprint_context(variables)
                     ))
                     result.variables = pickle.dumps(variables)
                     self._server.set_preempted(result)
@@ -159,7 +160,7 @@ class TaskServer(object):
                 # If the task has failed, request assistance and resume based
                 if task.is_aborted():
                     rospy.logerr("Task {}: FAIL. Context: {}".format(
-                        task.name, Task.pprint_variables(variables)
+                        task.name, msg_utils.pprint_context(variables)
                     ))
                     request_assistance = True
 
@@ -224,12 +225,16 @@ class TaskServer(object):
                     # resume_hint in the message. We assume that the monitor
                     # must set the new context, so an invalid unpickling error
                     # because of unset context is a valid error
-                    assist_result.context = pickle.loads(assist_result.context)
+                    assist_result.context = (
+                        pickle.loads(assist_result.context)
+                        if assist_result.context != ''
+                        else {}
+                    )
                     if not (
-                        assist_result.resume_hint == assist_result.context['resume_hint']
+                        assist_result.resume_hint == assist_result.context.get('resume_hint')
                         or (assist_result.resume_hint in [RequestAssistanceResult.RESUME_NEXT,
                                                           RequestAssistanceResult.RESUME_PREVIOUS]
-                            and assist_result['resume_hint'] == RequestAssistanceResult.RESUME_CONTINUE)
+                            and assist_result.get('resume_hint') == RequestAssistanceResult.RESUME_CONTINUE)
                     ):
                         rospy.logerr("Task {}: message hint of {} does not match context hint of {}".format(
                             task.name,
@@ -255,7 +260,7 @@ class TaskServer(object):
         # Check to see if the task aborted
         if task.is_aborted():
             rospy.logerr("Task {}: FAIL. Context: {}".format(
-                task.name, Task.pprint_variables(variables)
+                task.name, msg_utils.pprint_context(variables)
             ))
             result.variables = pickle.dumps(variables)
             self._server.set_aborted(result)

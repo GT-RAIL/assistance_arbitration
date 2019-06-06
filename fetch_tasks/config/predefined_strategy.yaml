@@ -1,0 +1,2 @@
+# The location to load recovery strategies from
+recovery_strategies: predefined_strategy.recovery_strategies

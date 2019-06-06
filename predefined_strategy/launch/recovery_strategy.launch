@@ -2,6 +2,10 @@
 <launch>
   <arg name="sim" default="false" />
 
+  <arg name="strategy_config" default="$(find predefined_strategy)/config/strategy.yaml" />
+
   <!-- Launch the recovery server -->
-  <node name="predefined_strategy" pkg="predefined_strategy" type="server_node.py" output="screen" />
+  <node name="predefined_strategy" pkg="predefined_strategy" type="server_node.py" output="screen">
+    <rosparam command="load" file="$(arg strategy_config)" />
+  </node>
 </launch>

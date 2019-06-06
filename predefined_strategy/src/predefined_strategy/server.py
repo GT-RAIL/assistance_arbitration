@@ -4,6 +4,7 @@
 from __future__ import print_function, division
 
 import pickle
+import importlib
 
 from threading import Lock
 
@@ -19,13 +20,13 @@ from assistance_msgs.msg import (RequestAssistanceAction,
 from predefined_strategy.recovery_strategies import RecoveryStrategies
 
 
-# The server arbitrates who to send the request to
+# The server decides how to deal with the error
 
 class PredefinedRecoveryServer(object):
     """
-    Given a request for assistance, and some TBD models, the server uses
-    the logic in this class to decide whether to request help from local or from
-    remote human.
+    Given an error in the exective level, the server looks through a list of
+    predefined errors and decides how to handle the error based on the
+    predefined rules
     """
 
     RECOVERY_ACTION_SERVER = "recovery_executor"
@@ -43,12 +44,25 @@ class PredefinedRecoveryServer(object):
         self._recovery_clients_lock = Lock()
 
         # Initialize the lookup table of recovery modes
-        self._recovery_strategies = RecoveryStrategies(
-            rospy.get_param("/{}/{}".format(
+        recovery_task_defs = rospy.get_param(
+            "/{}/{}".format(
                 PredefinedRecoveryServer.RECOVERY_ACTION_SERVER,
                 PredefinedRecoveryServer.RECOVERY_TASKS_PARAM
-            ), {})
+            ),
+            {}
         )
+
+        # Try to fetch the desired recovery strategies. Otherwise, use the
+        # default
+        strategies_class = RecoveryStrategies
+        try:
+            pkgname = rospy.get_param('~recovery_strategies')
+            pkg = importlib.import_module(pkgname)
+            strategies_class = getattr(pkg, "RecoveryStrategies")
+        except Exception as e:
+            rospy.logwarn("Predefined: Unable to fetch recoveries - {}".format(e))
+
+        self._recovery_strategies = strategies_class(recovery_task_defs)
 
         # Instantiate the action server to provide the arbitration
         self._server = actionlib.SimpleActionServer(
@@ -68,7 +82,7 @@ class PredefinedRecoveryServer(object):
 
         # Start the monitor node itself
         self._server.start()
-        rospy.loginfo("Task monitor node ready...")
+        rospy.loginfo("Predefined strategy node ready...")
 
     def _start_recovery_strategies_init(self):
         def timer_callback(evt):
@@ -114,7 +128,7 @@ class PredefinedRecoveryServer(object):
         """Arbitrate an incoming request for assistance"""
         request_received = rospy.Time.now()
 
-        # Pick the strategy
+        # Pick the client to execute recoveries if one is available
         status = GoalStatus.ABORTED
         result = self._server.get_default_result()
         client_name, recovery_client = None, None
@@ -124,7 +138,7 @@ class PredefinedRecoveryServer(object):
                     client_name, recovery_client = name, client
                     break
 
-        # If we do have a valid strategy
+        # If we do have a valid potential client
         if recovery_client is not None:
             # Unpickle the context
             goal.context = pickle.loads(goal.context)

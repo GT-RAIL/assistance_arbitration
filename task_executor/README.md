@@ -54,7 +54,7 @@ There are five types of steps that can be invoked:
 
 1. `task` steps, which are other tasks, with steps that may be specified. The ability for tasks to invoke other tasks is a key feature of this package's capabilities. When instantiated as Python objects, tasks are instances of [`AbstractStep`](src/task_executor/abstract_step.py).
 1. `action` steps, which are interfaces to robot capabilities. These are also instances of [`AbstractStep`](src/task_executor/abstract_step.py) and usually contain service or action clients to talk to robot capability nodes. Actions provide the basic functionality that we aim to chain together, intelligently, to specify tasks.
-1. `op` steps, which are simple mathematical or programmatic operations, such as variable assignment, or variable decrement, that might be necessary to parameterize tasks and actions.
+1. `op` steps, which are data manipulation expressions that can be executed during a task.
 1. `choice` steps, which check the truthiness of a specified statement, and accordingly execute one step or another.
 1. `loop` steps, which check the truthiness of a specified statement, and execute a specified in a loop until the statement evaluates to `false`.
 
@@ -74,9 +74,9 @@ tasks:
     - op: assign
       params:
         var_name: num_invocations
-        value: 3
+        expr: 3
       var:
-      - num_invocations
+      - var_name
 
     # Loop until the num_invocations variable reaches 0
     - loop: greeting_loop
@@ -122,6 +122,7 @@ tasks:
     - op: decrement
       params:
         var_name: num_invocations
+        expr: params.num_invocations - 1
       var:
       - num_invocations
 ```
@@ -141,6 +142,8 @@ When invoked, if a task has `params` or `var` defined, then those keys must be d
 
 ### action
 
+**WARNING: The method of importing actions has now been updated**
+
 Actions are specified as Python modules in [`task_executor.actions`](src/task_executor/actions/) and they usually instantiate service clients, action clients, subscribers, etc. to interface with the robot's ROS nodes. In order to refer to an action by name in a task specification, the action's `class` must be imported in [`__init__.py`](src/task_executor/actions/__init__.py) and the imported `class` must be associated with an action name in the `default_actions_dict`.
 
 Depending on the action, there are 2 optional fields that must be present when the action is invoked from a task:
@@ -152,14 +155,21 @@ In the example above, the [`speak`](src/task_executor/actions/speak.py) action h
 
 ### op
 
-Ops are operations that are specified in [`task_executor.ops`](src/task_executor/ops.py). They are general helper functions for manipulating variables during the course of the task. Check out the API documentation for more details.
+Op is a data manipulation expression, specified as an arbitrary Python expression, which is evaluated in the context of the task's `params` and `var`. When provided, the step requires:
+
+* a label, specified in the task steps as `op: <label>` (see example), in order to make debugging easier.
+* a `var_name` param that specifies the variable name that the output of the evaluated expression should be assigned to
+* an `expr` param that specifies the data manipulation operation to perform. See [expr](#condition--expr) for more details.
+* the `var_name` param value be repeated as a `var` in the step specification (see example).
+
+Given the above specification, the `expr` is evaluated and the `var_name` in the task's `var` values is assigned the result of the evaluation.
 
 ### choice
 
 Branching is performed by the `choice` step. When provided, the step requires:
 
 * a label, specified in the task steps as `choice: <label>` (see example), in order to make debugging easier.
-* a `condition` param that has a value that can be truthy or falsy (the value need not strictly be a `bool`). See [condition](#condition) for more details.
+* a `condition` param that has a value that can be truthy or falsy (the value need not strictly be a `bool`). See [condition](#condition--expr) for more details.
 
 Given the condition specification, the `choice` takes as params two additional optional params - `if_true` and `if_false`, which if specified, must contain either `task`, `action`, or `op` steps. The step specified in `if_true` is run if the `condition` evaluates to true, else the step in `if_false` is executed.
 
@@ -168,26 +178,31 @@ Given the condition specification, the `choice` takes as params two additional o
 In order to loop, we use the `loop` step. When provided, the step requires:
 
 * a label, specified in the task steps as `loop: <label>` (see example), in order to make debugging easier
-* a `condition` param that has a value that can be truthy or falsy. See [condition](#condition) for more details.
+* a `condition` param that has a value that can be truthy or falsy. See [condition](#condition--expr) for more details.
 * a `loop_body` param that contains either a `task`, `action`, or `op` step
 
 Given the condition, the `loop` will execute the step specified in `loop_body` until `condition` evaluates to `false`.
 
-### condition
+### condition / expr
 
-The `condition` is a param that is required by both the `choice` and `loop` steps in the task and it decides the behaviour of those steps. The value of the condition param can be any string usable in [`eval`](https://www.programiz.com/python-programming/methods/built-in/eval). Some valid `condition` strings are:
+The `condition` is a param that is required by both the `choice` and `loop` steps, and the `expr` is a param required by `op` steps. Some valid `condition` strings are:
 
-* true
-* params.boolean_param
-* "( params.param1 is None or params.param2 is not None )"
-* params.param1 == 1
-* "str.upper(' params.object_key ').strip() in ['SMALL_GEAR', 'LARGE_GEAR']"
+* `true`
+* `params.boolean_param`
+* `(params.param1 is None or params.param2 is not None)`
+* `params.object_key.strip().upper() in ['SMALL_GEAR', 'LARGE_GEAR']`
+
+And some valid `expr` strings are:
+
+* `42`
+* `params.segmented_objects[3]`
+* `params.segmented_objects[var.recognized_idx]`
 
 Note that:
 
-* there is minimal parsing logic to the value of the condition param, so please do not put malicious code in there
-* if there is a `params.*` or `var.*` variable that you wish to use in the condition string, then make sure that the variable expression is separated by a 'space'
-* follow YAML [string specification paradigms](http://blogs.perl.org/users/tinita/2018/03/strings-in-yaml---to-quote-or-not-to-quote.html)
+* we use [`parser`](https://docs.python.org/2/library/parser.html) to parse out python code from the param, and [`eval`](https://docs.python.org/2/library/functions.html#eval) with the local context of `params` and `var` to evaluate `condition` and `expr`
+* we do not program too defensively, so please do not put malicious code in these parameters
+* you should follow YAML [string specification paradigms](http://blogs.perl.org/users/tinita/2018/03/strings-in-yaml---to-quote-or-not-to-quote.html)
 * do NOT use the YAML keyword `null`. The ROS parameter server does not like that keyword
 
 
