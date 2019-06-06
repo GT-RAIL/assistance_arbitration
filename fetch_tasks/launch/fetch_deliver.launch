@@ -31,6 +31,7 @@
   <arg name="data_config" value="$(find fetch_tasks)/config/data.yaml" />
   <arg name="arbitrator_config" value="$(find fetch_tasks)/config/arbitrator.yaml" />
   <arg name="predefined_strategy_config" value="$(find fetch_tasks)/config/predefined_strategy.yaml" />
+  <arg name="datalogger_config" value="$(find fetch_tasks)/config/datalogger.yaml" />
 
   <!-- Other args -->
   <arg name="speech_gui" default="$(arg sim)" />
@@ -97,7 +98,9 @@
   </group>
 
   <!-- Data Logger -->
-  <node name="datalogger" pkg="assistance_arbitrator" type="datalogger_node.py" output="screen" if="$(arg datalogger)" />
+  <node name="datalogger" pkg="assistance_arbitrator" type="datalogger_node.py" output="screen" if="$(arg datalogger)">
+    <rosparam command="load" file="$(arg datalogger_config)" ns="config" />
+  </node>
 
   <!-- Local recovery strategy -->
   <include file="$(find local_strategy)/launch/recovery_strategy.launch" if="$(arg local_strategy)">
