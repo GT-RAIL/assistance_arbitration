@@ -11,7 +11,7 @@ from threading import Thread, Lock
 import rospy
 import actionlib
 
-from sound_interface import SoundClient
+from rail_sound_interface import SoundClient
 from task_executor.actions import get_default_actions, \
     ArmAction  # FIXME
 

@@ -15,7 +15,7 @@ from assistance_msgs.msg import (RequestAssistanceAction,
 from power_msgs.srv import BreakerCommand
 
 from task_executor.actions import get_default_actions
-from sound_interface import SoundClient
+from rail_sound_interface import SoundClient
 
 from .dialogue import DialogueManager
 

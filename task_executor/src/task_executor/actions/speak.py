@@ -5,7 +5,7 @@ import rospy
 import actionlib
 
 from task_executor.abstract_step import AbstractStep
-from sound_interface import SoundClient
+from rail_sound_interface import SoundClient
 
 from actionlib_msgs.msg import GoalStatus
 
@@ -17,13 +17,14 @@ class SpeakAction(AbstractStep):
     .. note::
 
         This action requires that the MaryTTS server defined in
-        ``sound_interface`` is running, preferably through a docker container
+        ``rail_sound_interface`` is running, preferably through a docker container
     """
 
     def init(self, name):
         self.name = name
         self._speak_client = SoundClient()
         self._stopped = False
+        self._speak_client.connect()
 
     def run(self, text, affect="", async=False):
         """
@@ -32,7 +33,7 @@ class SpeakAction(AbstractStep):
         Args:
             text (str) : the text to speak
             affect (str) : an affect key that is known to the ``SoundClient`` that \
-                is defined in the ``sound_interface``
+                is defined in the ``rail_sound_interface``
             async (bool) : whether to wait until the sound finishes playing
 
         .. seealso::

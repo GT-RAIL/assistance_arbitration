@@ -4,7 +4,7 @@
 import rospy
 
 from task_executor.abstract_step import AbstractStep
-from sound_interface import SoundClient
+from rail_sound_interface import SoundClient
 
 from rail_people_detection_msgs.msg import Person, DetectionContext
 from assistance_msgs.msg import Bounds

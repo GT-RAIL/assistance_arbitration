@@ -62,3 +62,7 @@
     local-name: rail_segmentation
     uri: git@github.com:GT-RAIL/rail_segmentation.git
     version: melodic-devel
+- git:
+    local-name: rail_sound_interface
+    uri: git@github.com:GT-RAIL/rail_sound_interface.git
+    version: melodic-devel

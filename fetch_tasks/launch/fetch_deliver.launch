@@ -87,7 +87,8 @@
 
   <!-- Sound Play -->
   <group if="$(arg sound)">
-    <node name="sound_server" pkg="sound_interface" type="server_node.py" />
+    <include file="$(find rail_sound_interface)/launch/sound_interface.launch">
+    </include>
   </group>
 
   <!-- Speech recognition -->

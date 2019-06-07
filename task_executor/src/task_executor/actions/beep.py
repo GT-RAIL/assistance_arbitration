@@ -5,7 +5,7 @@ import rospy
 import actionlib
 
 from task_executor.abstract_step import AbstractStep
-from sound_interface import SoundClient
+from rail_sound_interface import SoundClient
 
 from actionlib_msgs.msg import GoalStatus
 
@@ -13,13 +13,14 @@ from actionlib_msgs.msg import GoalStatus
 class BeepAction(AbstractStep):
     """
     Generate an R2D2 beep. The available beeps are in the package
-    ``sound_interface``.
+    ``rail_sound_interface``.
     """
 
     def init(self, name):
         self.name = name
         self._beep_client = SoundClient()
         self._stopped = False
+        self._beep_client.connect()
 
     def run(self, beep, async=False):
         """
@@ -27,7 +28,7 @@ class BeepAction(AbstractStep):
 
         Args:
             beep (str) : A beep key that is known to the ``SoundClient`` that \
-                is defined in the ``sound_interface``
+                is defined in the ``rail_sound_interface``
             async (bool) : Whether to wait until the sound finishes playing
 
         .. seealso::
