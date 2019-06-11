@@ -3,6 +3,7 @@
 
 from __future__ import print_function, division
 
+import re
 import parser
 
 import rospy
@@ -11,6 +12,15 @@ from assistance_msgs.msg import RequestAssistanceGoal, RequestAssistanceResult
 
 from assistance_msgs import msg_utils
 from task_executor.abstract_step import AbstractStep
+
+
+# Helper function to check if a string is a valid variable
+
+IDENTIFIER_REGEX = re.compile(r"^[^\d\W]\w*\Z")
+def is_identifier(string):
+    """Uses `re` to check if a string is a valid variable"""
+    match = re.match(IDENTIFIER_REGEX, string)
+    return (match is not None)
 
 
 # Helper class to provide class-like access to a dictionary
@@ -444,15 +454,15 @@ class Task(AbstractStep):
         return sorted(actual_var.keys()) == sorted(expected_var)
 
     def _resolve_param(self, param, var, task_params):
-        if isinstance(param, str) and ' ' not in param.strip():
-            splits = param.split('.', 1)  # Split up the param
+        if isinstance(param, str):
+            splits = param.strip().split('.', 1)  # Split up the param
 
             # Check if this requires a var resolution
-            if len(splits) > 1 and splits[0] == 'var':
+            if len(splits) > 1 and splits[0] == 'var' and is_identifier(splits[1]):
                 return var[splits[1]]
 
             # Check if this requires a task_param resolution
-            if len(splits) > 1 and splits[0] == 'params':
+            if len(splits) > 1 and splits[0] == 'params' and is_identifier(splits[1]):
                 return task_params[splits[1]]
 
         # Otherwise, this param should be used as is
