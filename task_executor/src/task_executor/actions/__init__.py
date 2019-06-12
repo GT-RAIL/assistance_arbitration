@@ -55,7 +55,7 @@ def _populate_default_actions():
 
 try:
     # Fetch the name of the target package from the global ROS param
-    pkgname = rospy.get_param('~actions', None) or rospy.get_param('/task_executor/actions')
+    pkgname = rospy.get_param('/task_executor/actions')
     pkg = importlib.import_module(pkgname)
     pkgpath = os.path.dirname(pkg.__file__)
 

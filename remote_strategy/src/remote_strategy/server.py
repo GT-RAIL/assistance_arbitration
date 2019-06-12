@@ -20,7 +20,6 @@ from assistance_msgs.srv import (EnableRemoteControl, EnableRemoteControlRequest
                                  DisableRemoteControl)
 from std_srvs.srv import Trigger, TriggerResponse
 
-from .controller import RemoteController
 from assistance_arbitrator.intervention_tracer import Tracer as InterventionTracer
 
 

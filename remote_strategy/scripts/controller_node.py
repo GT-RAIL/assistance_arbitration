@@ -3,7 +3,7 @@
 
 import rospy
 
-from remote_strategy.controller import RemoteController
+from remote_strategy import RemoteController
 
 
 def main():

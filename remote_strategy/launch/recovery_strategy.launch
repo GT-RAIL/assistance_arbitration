@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="sim" default="false" />
-  <arg name="launch_default_controller" default="false" />
   <arg name="strategy_config" default="$(find remote_strategy)/config/strategy.yaml" />
 
   <!-- Launch the remote controller -->
-  <node name="remote_controller" pkg="remote_strategy" type="controller_node.py" if="$(arg launch_default_controller)" />
+  <node name="remote_controller" pkg="remote_strategy" type="controller_node.py"/>
 
   <!-- Launch the recovery server -->
-  <node name="remote_strategy" pkg="remote_strategy" type="server_node.py" output="screen" />
+  <node name="remote_strategy" pkg="remote_strategy" type="server_node.py" output="screen">
+    <rosparam command="load" file="$(arg strategy_config)" />
+  </node>
 </launch>

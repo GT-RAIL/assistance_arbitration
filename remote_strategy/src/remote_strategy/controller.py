@@ -29,7 +29,7 @@ from std_srvs.srv import Trigger, TriggerResponse
 
 from task_executor.actions import get_default_actions
 from assistance_arbitrator.intervention_tracer import Tracer as InterventionTracer
-from remote_strategy import RemoteRecoveryServer
+from remote_strategy.server import RemoteRecoveryServer
 
 # Plotly, Dash, and Flask
 import dash
