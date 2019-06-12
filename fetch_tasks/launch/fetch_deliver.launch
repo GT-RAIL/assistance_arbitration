@@ -31,6 +31,7 @@
   <arg name="data_config" value="$(find fetch_tasks)/config/data.yaml" />
   <arg name="arbitrator_config" value="$(find fetch_tasks)/config/arbitrator.yaml" />
   <arg name="predefined_strategy_config" value="$(find fetch_tasks)/config/predefined_strategy.yaml" />
+  <arg name="remote_strategy_config" value="$(find fetch_tasks)/config/remote_strategy.yaml" />
   <arg name="datalogger_config" value="$(find fetch_tasks)/config/datalogger.yaml" />
 
   <!-- Other args -->
@@ -109,9 +110,15 @@
   </include>
 
   <!-- Remote recovery strategy -->
-  <include file="$(find remote_strategy)/launch/recovery_strategy.launch" if="$(arg remote_strategy)">
-    <arg name="sim" value="$(arg sim)" />
-  </include>
+  <group if="$(arg remote_strategy)">
+    <include file="$(find remote_strategy)/launch/recovery_strategy.launch">
+      <arg name="sim" value="$(arg sim)" />
+      <arg name="strategy_config" value="$(arg remote_strategy_config)" />
+    </include>
+
+    <!-- Helper node to republish move_base commands for remote debugging -->
+    <node name="move_goal_republisher" pkg="fetch_tasks" type="move_goal_republisher.py" />
+  </group>
 
   <!-- Predefined recovery strategy -->
   <group if="$(arg predefined_strategy)">

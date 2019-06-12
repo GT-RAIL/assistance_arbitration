@@ -1,0 +1,6 @@
+# The location to load the controller
+remote_controller: remote_strategy.controller
+
+# Launch an RViz view (TODO: this should be in the domain of the controller, so
+# in a future iteration, move this into the controller)
+rviz: "$(find remote_strategy)/rviz/default.rviz"

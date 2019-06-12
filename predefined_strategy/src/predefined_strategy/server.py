@@ -17,7 +17,7 @@ from assistance_msgs.msg import (RequestAssistanceAction,
                                  RequestAssistanceResult,
                                  ExecuteAction)
 
-from predefined_strategy.recovery_strategies import RecoveryStrategies
+from . import RecoveryStrategies
 
 
 # The server decides how to deal with the error
@@ -51,18 +51,7 @@ class PredefinedRecoveryServer(object):
             ),
             {}
         )
-
-        # Try to fetch the desired recovery strategies. Otherwise, use the
-        # default
-        strategies_class = RecoveryStrategies
-        try:
-            pkgname = rospy.get_param('~recovery_strategies')
-            pkg = importlib.import_module(pkgname)
-            strategies_class = getattr(pkg, "RecoveryStrategies")
-        except Exception as e:
-            rospy.logwarn("Predefined: Unable to fetch recoveries - {}".format(e))
-
-        self._recovery_strategies = strategies_class(recovery_task_defs)
+        self._recovery_strategies = RecoveryStrategies(recovery_task_defs)
 
         # Instantiate the action server to provide the arbitration
         self._server = actionlib.SimpleActionServer(
