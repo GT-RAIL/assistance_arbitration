@@ -66,7 +66,7 @@ def enabled_check(f):
 
 APP = dash.Dash(
     __name__,
-    assets_folder=os.path.join(rospkg.RosPack().get_path('remote_strategy'), 'dash_assets'),
+    assets_folder=os.path.join(rospkg.RosPack().get_path('fetch_tasks'), 'dash_assets'),
     external_stylesheets=[
         {
             'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
