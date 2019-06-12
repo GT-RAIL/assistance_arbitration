@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="sim" default="false" />
-
-  <!-- Helper node to republish move_base commands for remote debugging -->
-  <node name="move_goal_republisher" pkg="remote_strategy" type="move_goal_republisher.py" />
+  <arg name="launch_default_controller" default="false" />
+  <arg name="strategy_config" default="$(find remote_strategy)/config/strategy.yaml" />
 
   <!-- Launch the remote controller -->
-  <node name="remote_controller" pkg="remote_strategy" type="controller_node.py" />
+  <node name="remote_controller" pkg="remote_strategy" type="controller_node.py" if="$(arg launch_default_controller)" />
 
   <!-- Launch the recovery server -->
   <node name="remote_strategy" pkg="remote_strategy" type="server_node.py" output="screen" />

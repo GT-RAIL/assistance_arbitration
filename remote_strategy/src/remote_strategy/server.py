@@ -4,6 +4,7 @@
 from __future__ import print_function, division
 
 import os
+import re
 import pickle
 import subprocess
 
@@ -20,6 +21,7 @@ from assistance_msgs.srv import (EnableRemoteControl, EnableRemoteControlRequest
 from std_srvs.srv import Trigger, TriggerResponse
 
 from .controller import RemoteController
+from assistance_arbitrator.intervention_tracer import Tracer as InterventionTracer
 
 
 # The server performs local behaviours ro resume execution after contacting a
@@ -31,29 +33,40 @@ class RemoteRecoveryServer(object):
     remote monitoring UIs to deal with the error
     """
 
-    DEFAULT_RVIZ_VIEW = os.path.join(
-        rospkg.RosPack().get_path('remote_strategy'),
-        "rviz/fetch.rviz"
-    )
+    # The services to enable and disable the controller
+    ENABLE_SERVICE = '/remote_controller/enable'
+    DISABLE_SERVICE = '/remote_controller/disable'
+
+    # The service to call when the remote controller needs to indicate that the
+    # recovery is complete and that it should be polled for the resume strategy.
+    # Ideally, this would be specified somewhere other than here
+    INTERVENTION_COMPLETE_SERVICE = '/remote_strategy/intervention_complete'
 
     def __init__(self):
         # The service proxies to enable and disable the controller
-        self._controller_enable_srv = rospy.ServiceProxy(RemoteController.ENABLE_SERVICE, EnableRemoteControl)
-        self._controller_disable_srv = rospy.ServiceProxy(RemoteController.DISABLE_SERVICE, DisableRemoteControl)
+        self._controller_enable_srv = rospy.ServiceProxy(RemoteRecoveryServer.ENABLE_SERVICE, EnableRemoteControl)
+        self._controller_disable_srv = rospy.ServiceProxy(RemoteRecoveryServer.DISABLE_SERVICE, DisableRemoteControl)
 
         # The intervention trace publisher
         self._trace_pub = rospy.Publisher(
-            RemoteController.INTERVENTION_TRACE_TOPIC,
+            InterventionTracer.INTERVENTION_TRACE_TOPIC,
             InterventionEvent,
             queue_size=10
         )
 
-        # The remote interface pointers
+        # The rviz interface and path
+        try:
+            self._rviz_view = RemoteRecoveryServer._parse_find_tag_in_str(
+                rospy.get_param("~rviz", "$(find remote_strategy)/rviz/default.rviz")
+            )
+        except Exception as e:
+            rospy.logerr("Remote: Unable to parse RViz view - {}".format(e))
+            self._rviz_view = None
         self._rviz_process = None
 
         # A service that can be called when the recovery process is complete
         self._completion_service = rospy.Service(
-            RemoteController.INTERVENTION_COMPLETE_SERVICE,
+            RemoteRecoveryServer.INTERVENTION_COMPLETE_SERVICE,
             Trigger,
             self._intervention_complete
         )
@@ -92,7 +105,7 @@ class RemoteRecoveryServer(object):
 
         # Start an rviz process and wait until it is shut
         self._rviz_process = subprocess.Popen(
-            ["rosrun", "rviz", "rviz", "-d", RemoteRecoveryServer.DEFAULT_RVIZ_VIEW]
+            ["rosrun", "rviz", "rviz", "-d", self._rviz_view]
         )
         self._rviz_process.wait()
         self._rviz_process = None
@@ -117,3 +130,19 @@ class RemoteRecoveryServer(object):
         if self._rviz_process is not None and self._rviz_process.poll() is None:
             self._rviz_process.terminate()
         return TriggerResponse(success=True)
+
+    @staticmethod
+    def _parse_find_tag_in_str(string):
+        # If the value is set to false/null, then do not start the RViz process
+        if not string:
+            return None
+
+        # Else, parse out the view to use
+        path_components = string.split('/')
+        match = re.match(r'^\$\(find (?P<package_name>\w+)\)$', path_components[0])
+        if match is not None:
+            package_path = rospkg.RosPack().get_path(match.groupdict()['package_name'])
+            path_components[0] = package_path
+        path = os.path.join(*path_components)
+        assert os.path.exists(path), "Parsed path '{}' does not exist".format(path)
+        return path

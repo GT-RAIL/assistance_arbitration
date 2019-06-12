@@ -17,7 +17,7 @@ from assistance_msgs.msg import (RequestAssistanceAction,
                                  RequestAssistanceResult,
                                  ExecuteAction)
 
-from predefined_strategy.recovery_strategies import RecoveryStrategies
+from .recovery_strategies import RecoveryStrategies
 
 
 # The server decides how to deal with the error
