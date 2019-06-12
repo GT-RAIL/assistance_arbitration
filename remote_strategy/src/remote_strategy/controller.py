@@ -35,13 +35,24 @@ class RemoteController(object):
         )
 
         # Service proxy to indicate that the intervention is complete
-        self._complete_intervention_srv = rospy.ServiceProxy(RemoteRecoveryServer.INTERVENTION_COMPLETE_SERVICE, Trigger)
+        self._complete_intervention_srv = rospy.ServiceProxy(
+            RemoteRecoveryServer.INTERVENTION_COMPLETE_SERVICE,
+            Trigger
+        )
 
         # Flags and services to enable and disable this controller
         self._current_error = None
         self._current_response = None
-        self._enable_service = rospy.Service(RemoteRecoveryServer.ENABLE_SERVICE, EnableRemoteControl, self.enable)
-        self._disable_service = rospy.Service(RemoteRecoveryServer.DISABLE_SERVICE, DisableRemoteControl, self.disable)
+        self._enable_service = rospy.Service(
+            RemoteRecoveryServer.ENABLE_SERVICE,
+            EnableRemoteControl,
+            self.enable
+        )
+        self._disable_service = rospy.Service(
+            RemoteRecoveryServer.DISABLE_SERVICE,
+            DisableRemoteControl,
+            self.disable
+        )
 
     def start(self):
         rospy.spin()

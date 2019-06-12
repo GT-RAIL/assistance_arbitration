@@ -30,5 +30,5 @@ class RecoveryStrategies(object):
                 - resume_hint (int) : assistance_msgs/RequestAssistanceResult
                 - resume_context (dict)
         """
-        pass
+        return (None, None, None)
 ```
