@@ -57,14 +57,14 @@ class TaskServer(object):
         self.reload(None)
 
         # Connect to the arbitrator only if needed
+        self._arbitration_client = self._arbitration_connector = None
         if connect_arbitrator:
             # Instantiate a connection to the arbitration server
-            self._arbitration_client = actionlib.SimpleActionClient(
+            self._arbitration_connector = actionlib.SimpleActionClient(
                 TaskServer.ASSISTANCE_ARBITRATOR_ACTION_SERVER,
                 RequestAssistanceAction
             )
-        else:
-            self._arbitration_client = None
+            self._arbitration_connector_timer = None
 
         # Instantiate the action server
         self._server = actionlib.SimpleActionServer(
@@ -75,10 +75,8 @@ class TaskServer(object):
         )
 
     def start(self):
-        if self._arbitration_client is not None:
-            rospy.loginfo("Connecting to assistance arbitrator...")
-            self._arbitration_client.wait_for_server()
-            rospy.loginfo("...assistance arbitrator connected")
+        if self._arbitration_connector is not None:
+            self._start_connect_to_client()
 
         self._server.start()
         rospy.loginfo("Executor node ready...")
@@ -86,6 +84,19 @@ class TaskServer(object):
         # Optional: play a beep if the executor is ready
         if hasattr(self.actions, 'beep'):
             self.actions.beep(beep=SoundClient.BEEP_PROUD)
+
+    def _start_connect_to_client(self):
+        rospy.loginfo("Connecting to assistance arbitrator...")
+
+        # Wait for the connection in a separate thread
+        def check_client_connection(evt):
+            self._arbitration_connector.wait_for_server()
+            self._arbitration_client = self._arbitration_connector
+            self._arbitration_connector = None
+            rospy.loginfo("...assistance arbitrator connected")
+
+        # Use the timers as the threading interface, for ease of use
+        self._arbitration_connector_timer = rospy.Timer(rospy.Duration(0.1), check_client_connection, oneshot=True)
 
     def reload(self, req):
         # Get the task configs

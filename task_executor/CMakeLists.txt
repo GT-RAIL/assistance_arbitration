@@ -205,7 +205,8 @@ if(CATKIN_ENABLE_TESTING)
   # endif()
 
   ## Add folders to be run by python nosetests
-  # catkin_add_nosetests(test)
+  # catkin_add_nosetests(test/nosetests)
 
-  ## Add unittest files that need a running ROS core
+  ## Add rostest files that need a running ROS core
+  add_rostest(test/test_actions.test)
 endif()
