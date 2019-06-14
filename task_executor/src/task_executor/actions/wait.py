@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # The wait action
 
+from __future__ import print_function, division
+
 import rospy
 
 from task_executor.abstract_step import AbstractStep

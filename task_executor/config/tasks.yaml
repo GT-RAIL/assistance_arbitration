@@ -14,7 +14,7 @@ tasks:
     steps:
     - choice: choice1
       params:
-        condition: "( params.param1 is None or params.param2 is not None )"
+        condition: "(params.param1 is None or params.param2 is not None)"
         if_true:
           op: assign
           params:
@@ -77,12 +77,3 @@ tasks:
     - op: print_var
       params:
         var_name: cond
-
-  reposition_recovery_test:
-    steps:
-    - action: update_beliefs
-      params:
-        beliefs:
-          TASK_AT_GEARBOX_PICK_STATION: true
-
-    - op: abort
