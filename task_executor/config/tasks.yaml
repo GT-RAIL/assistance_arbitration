@@ -2,8 +2,8 @@
 actions: task_executor.actions
 
 tasks:
-  # Conditions test
-  conditions_test:
+  #### Choice tests
+  choice_test:
     params:
     - param1
     - param2
@@ -14,12 +14,19 @@ tasks:
     steps:
     - choice: choice1
       params:
-        condition: "(params.param1 is None or params.param2 is not None)"
+        condition: "(params.param1 is None and params.param2 is not None)"
         if_true:
           op: assign
           params:
             var_name: var1
-            value: 1
+            expr: 1
+          var:
+          - var1
+        if_false:
+          op: assign
+          params:
+            var_name: var1
+            expr: 2
           var:
           - var1
 
@@ -30,17 +37,17 @@ tasks:
           op: assign
           params:
             var_name: var1
-            value: 2
+            expr: 3
           var:
           - var1
 
-  # Loop resumption bug test
+  #### Loop tests
   loop_test:
     steps:
     - op: assign
       params:
         var_name: cond
-        value: 0
+        expr: 0
       var:
       - cond
 
@@ -62,18 +69,13 @@ tasks:
     - cond
 
     steps:
-    - op: print_var
-      params:
-        var_name: cond
+    - action: trigger
+      var:
+      - success
 
     - op: increment
       params:
         var_name: cond
+        expr: params.cond + 1
       var:
       - cond
-
-    - op: abort
-
-    - op: print_var
-      params:
-        var_name: cond

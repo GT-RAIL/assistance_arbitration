@@ -209,4 +209,5 @@ if(CATKIN_ENABLE_TESTING)
 
   ## Add rostest files that need a running ROS core
   add_rostest(test/test_actions.test)
+  add_rostest(test/test_tasks.test)
 endif()
