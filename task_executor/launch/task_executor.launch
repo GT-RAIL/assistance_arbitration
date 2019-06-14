@@ -6,9 +6,11 @@
   <arg name="data_config" default="$(find task_executor)/config/data.yaml" />
 
   <!-- The database node -->
+  <!--
   <node name="database" pkg="task_executor" type="database_node.py">
     <rosparam command="load" file="$(arg data_config)" />
   </node>
+  -->
 
   <!-- The beliefs node -->
   <node name="beliefs" pkg="task_executor" type="beliefs_node.py" />

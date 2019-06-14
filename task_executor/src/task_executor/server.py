@@ -9,7 +9,6 @@ import rospy
 import actionlib
 
 from assistance_msgs import msg_utils
-from rail_sound_interface import SoundClient
 from task_executor.abstract_step import AbstractStep
 from task_executor.actions import get_default_actions
 from task_executor.tasks import Task, TaskContext
@@ -19,6 +18,12 @@ from assistance_msgs.msg import ExecuteAction
 from assistance_msgs.msg import (RequestAssistanceAction, RequestAssistanceGoal,
                                  RequestAssistanceResult)
 from std_srvs.srv import Trigger, TriggerResponse
+
+# Optional: play a beep when the executor is ready
+try:
+    from rail_sound_interface import SoundClient
+except ImportError as e:
+    pass
 
 
 # Helper function for debugging
@@ -77,7 +82,10 @@ class TaskServer(object):
 
         self._server.start()
         rospy.loginfo("Executor node ready...")
-        self.actions.beep(beep=SoundClient.BEEP_PROUD)
+
+        # Optional: play a beep if the executor is ready
+        if hasattr(self.actions, 'beep'):
+            self.actions.beep(beep=SoundClient.BEEP_PROUD)
 
     def reload(self, req):
         # Get the task configs
