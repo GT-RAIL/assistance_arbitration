@@ -43,6 +43,9 @@ tasks:
 
   #### Loop tests
   loop_test:
+    params:
+    - num_iterations
+
     steps:
     - op: assign
       params:
@@ -53,7 +56,7 @@ tasks:
 
     - loop: loop
       params:
-        condition: var.cond <= 5
+        condition: var.cond < params.num_iterations
         loop_body:
           task: loop_body_test
           params:

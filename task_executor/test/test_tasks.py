@@ -68,6 +68,25 @@ class TestTasks(unittest.TestCase):
         self.assertEqual(status, GoalStatus.SUCCEEDED)
         self.assertEqual(result['var1'], 1)
 
+    def test_loops(self):
+        args = {'num_iterations': 5}
+        goal = ExecuteGoal(name='loop_test', params=pickle.dumps(args), no_recoveries=True)
+        self.client.send_goal(goal)
+        self.client.wait_for_result()
+        status = self.client.get_state()
+        result = pickle.loads(self.client.get_result().variables)
+        self.assertEqual(status, GoalStatus.SUCCEEDED)
+        self.assertEqual(self.node.trigger_count, 5)
+
+        args = {'num_iterations': -1}
+        goal = ExecuteGoal(name='loop_test', params=pickle.dumps(args), no_recoveries=True)
+        self.client.send_goal(goal)
+        self.client.wait_for_result()
+        status = self.client.get_state()
+        result = pickle.loads(self.client.get_result().variables)
+        self.assertEqual(status, GoalStatus.SUCCEEDED)
+        self.assertEqual(self.node.trigger_count, 5)
+
 
 # Set this up as a rostest script
 if __name__ == '__main__':
