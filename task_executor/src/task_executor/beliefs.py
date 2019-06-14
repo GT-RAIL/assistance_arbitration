@@ -67,7 +67,7 @@ class BeliefsServer(object):
                 # Disambiguate the belief
                 belief = getattr(BeliefKeys, belief, belief)
 
-                # Then append the belief and the value to the respons
+                # Then append the belief and the value to the response
                 values.append(self.beliefs[belief])
                 beliefs.append(belief)
 
