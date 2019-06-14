@@ -70,6 +70,18 @@ class TestActions(unittest.TestCase):
         self.assertEqual(status, GoalStatus.SUCCEEDED)
         self.assertEqual(value_returned, string_value)
 
+    def test_trigger(self):
+        status, variables = self.actions.trigger()
+        self.assertEqual(status, GoalStatus.SUCCEEDED)
+        self.assertTrue(variables['success'])
+        self.assertEqual(self.node.trigger_count, 1)
+
+        self.node.trigger_enabled = False
+        status, variables = self.actions.trigger()
+        self.assertEqual(status, GoalStatus.SUCCEEDED)
+        self.assertFalse(variables['success'])
+        self.assertEqual(self.node.trigger_count, 1)
+
 # Set this up as a rostest script
 if __name__ == '__main__':
     rospy.init_node('test_actions_node')
