@@ -45,6 +45,12 @@ class TestActions(unittest.TestCase):
         self.assertEqual(status, GoalStatus.SUCCEEDED)
         self.assertGreaterEqual(rospy.Time.now(), start_time+rospy.Duration(2.0))
 
+        start_time = rospy.Time.now()
+        for variables in self.actions.wait.run(duration=2.0):
+            if rospy.Time.now() > start_time + rospy.Duration(1.0):
+                self.actions.wait.stop()
+        self.assertEqual(self.actions.wait.status, GoalStatus.PREEMPTED)
+
     def test_get_string(self):
         self.node.publish()
         status, variables = self.actions.get_string()
@@ -81,6 +87,26 @@ class TestActions(unittest.TestCase):
         self.assertEqual(status, GoalStatus.SUCCEEDED)
         self.assertFalse(variables['success'])
         self.assertEqual(self.node.trigger_count, 1)
+
+    def test_integers(self):
+        status, variables = self.actions.integers(input_value=3)
+        self.assertEqual(status, GoalStatus.SUCCEEDED)
+        self.assertEqual(variables['output_value'], 4)
+
+        start_time = rospy.Time.now()
+        for variables in self.actions.integers.run(input_value=6):
+            if rospy.Time.now() > start_time + rospy.Duration(self.node.integer_wait-1):
+                self.actions.integers.stop()
+        self.assertEqual(self.actions.integers.status, GoalStatus.PREEMPTED)
+
+        self.node.integer_enabled = False
+        status, variables = self.actions.integers(input_value=10)
+        self.assertEqual(status, GoalStatus.ABORTED)
+        self.assertListEqual(
+            sorted(variables.keys()),
+            ['action', 'goal', 'num_aborts', 'result', 'status']
+        )
+
 
 # Set this up as a rostest script
 if __name__ == '__main__':

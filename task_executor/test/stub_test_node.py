@@ -24,7 +24,7 @@ class StubTestNode(object):
     """
 
     DEFAULT_STRING_VALUE = "hello world"
-    DEFAULT_INTEGERS_WAIT_TIME = 5  # seconds
+    DEFAULT_INTEGERS_WAIT_TIME = 2  # seconds
 
     def __init__(self):
         # The string publisher and subscriber
