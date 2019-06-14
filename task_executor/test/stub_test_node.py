@@ -72,6 +72,9 @@ class StubTestNode(object):
         self.integer_enabled = True
         self.integer_wait = StubTestNode.DEFAULT_INTEGERS_WAIT_TIME
 
+    def publish(self):
+        self._string_pub.publish(self.string_value)
+
     def _on_string(self, msg):
         self.string_value = msg.data
 

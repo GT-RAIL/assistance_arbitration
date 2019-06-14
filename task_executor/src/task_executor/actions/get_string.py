@@ -15,7 +15,7 @@ from std_msgs.msg import String
 class GetStringAction(AbstractStep):
     """Get a string on a specified topic"""
 
-    DEFAULT_STRING_TOPIC = "/test_string"
+    DEFAULT_STRING_TOPIC = "/test_string_in"
 
     def init(self, name):
         self.name = name

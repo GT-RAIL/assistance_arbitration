@@ -12,10 +12,10 @@ from std_msgs.msg import String
 
 class SetStringAction(AbstractStep):
     """
-    Set a string on a specified topic. Cannot be preempted
+    Set a string on a specified topic (latched). Cannot be preempted.
     """
 
-    DEFAULT_STRING_TOPIC = "/test_string"
+    DEFAULT_STRING_TOPIC = "/test_string_out"
 
     def init(self, name):
         self.name = name
@@ -33,13 +33,13 @@ class SetStringAction(AbstractStep):
 
             :meth:`task_executor.abstract_step.AbstractStep.run`
         """
-        topic = topic or GetStringAction.DEFAULT_STRING_TOPIC
+        topic = topic or SetStringAction.DEFAULT_STRING_TOPIC
         rospy.loginfo("Action {}: Sending data to {}".format(self.name, topic))
 
         # Publish the data
-        publisher = rospy.Publisher(topic, String, queue_size=1)
+        publisher = rospy.Publisher(topic, String, queue_size=1, latch=True)
         publisher.publish(string_data)
-        rospy.sleep(0.5)  # Let the publish actually happen
+        rospy.sleep(0.1)  # Let the publish actually happen
 
         # Set the result to succeeded
         yield self.set_succeeded()
