@@ -91,7 +91,7 @@ class TestActions(unittest.TestCase):
     def test_integers(self):
         status, variables = self.actions.integers(input_value=3)
         self.assertEqual(status, GoalStatus.SUCCEEDED)
-        self.assertEqual(variables['output_value'], 4)
+        self.assertEqual(variables['output_value'], 2)
 
         start_time = rospy.Time.now()
         for variables in self.actions.integers.run(input_value=6):

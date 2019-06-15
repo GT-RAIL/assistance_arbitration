@@ -51,7 +51,7 @@ class StubTestNode(object):
         )
 
         # The integers action server
-        self.integer_func = lambda x: x + 1
+        self.integer_func = lambda x: x - 1
         self.integer_enabled = True
         self.integer_wait = StubTestNode.DEFAULT_INTEGERS_WAIT_TIME
         self._integers_server = actionlib.SimpleActionServer(
@@ -68,7 +68,7 @@ class StubTestNode(object):
         self.string_value = StubTestNode.DEFAULT_STRING_VALUE
         self.trigger_count = 0
         self.trigger_enabled = True
-        self.integer_func = lambda x: x + 1
+        self.integer_func = lambda x: x - 1
         self.integer_enabled = True
         self.integer_wait = StubTestNode.DEFAULT_INTEGERS_WAIT_TIME
 
