@@ -2,8 +2,53 @@
 actions: task_executor.actions
 
 tasks:
-  # Conditions test
-  conditions_test:
+  #### Vanilla tasks
+  task1:
+    steps:
+    - op: assign
+      params:
+        var_name: output_value
+        expr: 3
+      var:
+      - output_value
+
+    - loop: trigger_thrice
+      params:
+        condition: var.output_value
+        loop_body:
+          task: task1_loop
+          params:
+            input_value: var.output_value
+          var:
+          - output_value
+
+    - action: wait
+      params:
+        duration: 5.0
+
+    - action: set_string
+      params:
+        string_data: "and now we bow..."
+
+  task1_loop:
+    params:
+    - input_value
+    var:
+    - output_value
+
+    steps:
+    - action: trigger
+      var:
+      - success
+
+    - action: integers
+      params:
+        input_value: params.input_value
+      var:
+      - output_value
+
+  #### Choice tests
+  choice_test:
     params:
     - param1
     - param2
@@ -14,12 +59,19 @@ tasks:
     steps:
     - choice: choice1
       params:
-        condition: "( params.param1 is None or params.param2 is not None )"
+        condition: "(params.param1 is None and params.param2 is not None)"
         if_true:
           op: assign
           params:
             var_name: var1
-            value: 1
+            expr: 1
+          var:
+          - var1
+        if_false:
+          op: assign
+          params:
+            var_name: var1
+            expr: 2
           var:
           - var1
 
@@ -30,23 +82,26 @@ tasks:
           op: assign
           params:
             var_name: var1
-            value: 2
+            expr: 3
           var:
           - var1
 
-  # Loop resumption bug test
+  #### Loop tests
   loop_test:
+    params:
+    - num_iterations
+
     steps:
     - op: assign
       params:
         var_name: cond
-        value: 0
+        expr: 0
       var:
       - cond
 
     - loop: loop
       params:
-        condition: var.cond <= 5
+        condition: var.cond < params.num_iterations
         loop_body:
           task: loop_body_test
           params:
@@ -62,27 +117,52 @@ tasks:
     - cond
 
     steps:
-    - op: print_var
-      params:
-        var_name: cond
+    - action: trigger
+      var:
+      - success
 
     - op: increment
       params:
         var_name: cond
+        expr: params.cond + 1
       var:
       - cond
 
-    - op: abort
+  #### Op tests
+  index_into_container:
+    params:
+    - container
+    - idx
 
-    - op: print_var
-      params:
-        var_name: cond
+    var:
+    - entity
 
-  reposition_recovery_test:
     steps:
-    - action: update_beliefs
+    - op: index
       params:
-        beliefs:
-          TASK_AT_GEARBOX_PICK_STATION: true
+        var_name: entity
+        expr: params.container[params.idx]
+      var:
+      - entity
 
-    - op: abort
+  fibonacci:
+    params:
+    - n
+
+    var:
+    - value
+
+    steps:
+    - op: assign
+      params:
+        var_name: fib
+        expr: "lambda x,y=[1,1]:([(y.append(y[-1]+y[-2]),y[-1])[1] for i in range(1+x-len(y))],y[x])[1]"
+      var:
+      - fib
+
+    - op: assign
+      params:
+        var_name: value
+        expr: var.fib(params.n)
+      var:
+      - value

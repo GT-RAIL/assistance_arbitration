@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <!-- Start the task executor -->
+  <include file="$(find task_executor)/launch/task_executor.launch">
+  </include>
+
+  <!-- Run the unit test -->
+  <test test-name="test_actions" pkg="task_executor" type="test_actions.py" />
+</launch>

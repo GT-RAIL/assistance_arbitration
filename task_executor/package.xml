@@ -54,6 +54,9 @@
   <depend>assistance_msgs</depend>
   <depend>rospy</depend>
 
+  <!-- Test dependencies  -->
+  <build_depend>rostest</build_depend>
+
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
