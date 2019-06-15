@@ -9,10 +9,10 @@ project(assistance_msgs)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
-  # geometry_msgs
-  # manipulation_actions
-  # message_generation
-  # rail_manipulation_msgs
+  geometry_msgs
+  manipulation_actions
+  message_generation
+  rail_manipulation_msgs
   rospy
   std_msgs
 )
@@ -65,11 +65,11 @@ add_message_files(
   BeliefKeys.msg
 
   # Database
-  # Waypoint.msg
-  # ObjectConstraints.msg
-  # Bounds.msg
-  # ArmJointPose.msg
-  # PartsAtLocation.msg
+  Waypoint.msg
+  ObjectConstraints.msg
+  Bounds.msg
+  ArmJointPose.msg
+  PartsAtLocation.msg
 
   # Intervention Episode
   InterventionEvent.msg
@@ -86,13 +86,13 @@ add_service_files(
   GetBeliefs.srv
 
   # Database
-  # GetWaypoints.srv
-  # GetObjectConstraints.srv
-  # GetArmGripperPose.srv
-  # GetArmJointPose.srv
-  # GetTrajectory.srv
-  # GetPartsAtLocation.srv
-  # GetSemanticLocations.srv
+  GetWaypoints.srv
+  GetObjectConstraints.srv
+  GetArmGripperPose.srv
+  GetArmJointPose.srv
+  GetTrajectory.srv
+  GetPartsAtLocation.srv
+  GetSemanticLocations.srv
 
   # Remote Strategy
   EnableRemoteControl.srv
@@ -114,10 +114,10 @@ add_action_files(
 generate_messages(
   DEPENDENCIES
     actionlib_msgs
-    # geometry_msgs
+    geometry_msgs
     std_msgs
-    # manipulation_actions
-    # rail_manipulation_msgs
+    manipulation_actions
+    rail_manipulation_msgs
 )
 
 ################################################
