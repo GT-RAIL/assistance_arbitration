@@ -12,7 +12,7 @@ def pprint_context(context, return_types=True):
     """
     Helper function to pretty print the variable context that is returned
     from the tasks. Basically stub out all objects that are not basic python
-    types
+    types. Also convert all unicode strings to str (to assist in the CLI)
 
     Args:
         context (dict, list, tuple) : A container of context that form
@@ -30,7 +30,10 @@ def pprint_context(context, return_types=True):
             if isinstance(v, (list, tuple, dict,)):
                 pp_context[k] = pprint_context(v, return_types)
             elif isinstance(v, (bool, int, long, float, str, unicode)):
-                pp_context[k] = v
+                if not isinstance(v, unicode):
+                    pp_context[k] = v
+                else:
+                    pp_context[k] = str(v)
             elif return_types:
                 pp_context[k] = type(v)
 
@@ -40,7 +43,10 @@ def pprint_context(context, return_types=True):
             if isinstance(x, (list, tuple, dict,)):
                 pp_context.append(pprint_context(x, return_types))
             elif isinstance(x, (bool, int, long, float, str, unicode)):
-                pp_context.append(x)
+                if not isinstance(x, unicode):
+                    pp_context.append(x)
+                else:
+                    pp_context.append(str(x))
             elif return_types:
                 pp_context.append(type(x))
 
