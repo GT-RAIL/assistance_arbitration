@@ -8,7 +8,7 @@ from assistance_msgs.msg import RequestAssistanceResult
 
 # The different utility functions
 
-def pprint_context(context):
+def pprint_context(context, return_types=True):
     """
     Helper function to pretty print the variable context that is returned
     from the tasks. Basically stub out all objects that are not basic python
@@ -17,6 +17,8 @@ def pprint_context(context):
     Args:
         context (dict, list, tuple) : A container of context that form
         the context of return values from a task or action
+        return_types (bool) : Return the type of a non-basic python types; else
+        ignore the key containing the non-basic type
 
     Returns:
         (dict, list, tuple) : A container of context with all \
@@ -26,20 +28,20 @@ def pprint_context(context):
         pp_context = {}
         for k, v in context.iteritems():
             if isinstance(v, (list, tuple, dict,)):
-                pp_context[k] = pprint_context(v)
+                pp_context[k] = pprint_context(v, return_types)
             elif isinstance(v, (bool, int, long, float, str, unicode)):
                 pp_context[k] = v
-            else:
+            elif return_types:
                 pp_context[k] = type(v)
 
     elif isinstance(context, (list, tuple,)):
         pp_context = []
         for x in context:
             if isinstance(x, (list, tuple, dict,)):
-                pp_context.append(pprint_context(x))
+                pp_context.append(pprint_context(x, return_types))
             elif isinstance(x, (bool, int, long, float, str, unicode)):
                 pp_context.append(x)
-            else:
+            elif return_types:
                 pp_context.append(type(x))
 
     return pp_context
