@@ -258,7 +258,7 @@ class TaskServer(object):
                         rospy.logerr("Task {}: message hint of {} does not match context hint of {}".format(
                             task.name,
                             assist_result.resume_hint,
-                            assist_result.context['resume_hint']
+                            assist_result.context.get('resume_hint')
                         ))
                         task.set_aborted(**assist_result.context)
                         break
