@@ -20,6 +20,7 @@ sudo apt-get install -y \
         ros-melodic-easy-markers \
         ros-melodic-effort-controllers \
         ros-melodic-fetch-driver-msgs \
+        ros-melodic-gazebo-ros \
         ros-melodic-joy \
         ros-melodic-kalman-filter \
         ros-melodic-map-server \
@@ -32,6 +33,8 @@ sudo apt-get install -y \
         ros-melodic-moveit-ros-control-interface \
         ros-melodic-moveit-ros-visualization \
         ros-melodic-openni2-launch \
+        ros-melodic-pcl-conversions \
+        ros-melodic-pcl-ros \
         ros-melodic-robot-controllers \
         ros-melodic-slam-karto \
         ros-melodic-sound-play \
@@ -39,8 +42,7 @@ sudo apt-get install -y \
         ros-melodic-trac-ik \
         sox \
         vim
-curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
-sudo python /tmp/get-pip.py && \
+which pip || (curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py && sudo python /tmp/get-pip.py)
 sudo -H pip install -I -U -r requirements.txt
 
 # Create the workspace directories
