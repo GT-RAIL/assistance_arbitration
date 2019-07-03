@@ -50,6 +50,9 @@ def pprint_context(context, return_types=True):
             elif return_types:
                 pp_context.append(type(x))
 
+    elif context is None:
+        pp_context = context
+
     return pp_context
 
 
