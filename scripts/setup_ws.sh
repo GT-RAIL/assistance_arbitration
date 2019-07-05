@@ -79,6 +79,12 @@ cd $(pwd)/active/src/ && wstool up && cd $OLDPWD
 
 # Then build the workspaces
 source /opt/ros/melodic/setup.bash
-cd $(pwd)/stable && catkin build && cd $OLDPWD
+cd $(pwd)/stable
+catkin build
+cd $OLDPWD
+
 source ./stable/devel/setup.bash
-cd $(pwd)/active && catkin build && cd $OLDPWD
+cd $(pwd)/active
+catkin build
+catkin build --catkin-make-args run_tests && catkin_test_results
+cd $OLDPWD
