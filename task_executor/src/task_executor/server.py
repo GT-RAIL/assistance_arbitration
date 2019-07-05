@@ -245,8 +245,8 @@ class TaskServer(object):
                         if assist_result.context != ''
                         else {}
                     )
-                    rospy.loginfo("Assistance request COMPLETED. Resume Hint: {}"
-                                  .format(assist_result.resume_hint))
+                    rospy.loginfo("Assistance request COMPLETED. Resume ({}): {}"
+                                  .format(assist_result.resume_hint, assist_result.context))
                     if assist_result.resume_hint != RequestAssistanceResult.RESUME_NONE:
                         # Figure out the execution context of subtasks from the
                         # context dictionary that's returned
