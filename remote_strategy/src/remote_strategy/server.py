@@ -112,6 +112,7 @@ class RemoteRecoveryServer(object):
         # Get the desired resumption strategy
         disable_resp = self._controller_disable_srv()
         result.resume_hint = disable_resp.response.resume_hint
+        result.context = disable_resp.response.context
         result.stats.request_complete = rospy.Time.now()
         trace_msg = InterventionEvent(stamp=result.stats.request_complete,
                                       type=InterventionEvent.START_OR_END_EVENT)
