@@ -3,10 +3,26 @@
 
 from __future__ import print_function, division
 
+import pickle
+
 from assistance_msgs.msg import RequestAssistanceResult
 
 
 # The different utility functions
+
+def unpickle_context(context):
+    """
+    Given a context string, unpickle it safely
+
+    Args:
+        context (str) : A pickled string of the context
+
+    Returns:
+        (dict) : An unpickled dictionary of the context. If the string is \
+            empty, an empty dictionary is returned
+    """
+    return pickle.loads(context) if context != '' else {}
+
 
 def pprint_context(context, return_types=True):
     """
@@ -73,6 +89,28 @@ def get_final_component_context(goal_context):
         return goal_context
 
 
+def get_final_resume_context(resume_context):
+    """
+    Given a :attr:`RequestAssistanceResult.context` as input, return the
+    component context that dictates the resumption behaviour. This is
+    essentially either the final component context, or the first context that is
+    not :const:`RequestAssistanceResult.RESUME_CONTINUE`
+
+    Args:
+        resume_context (dict) : the resume context
+
+    Returns:
+        (dict) : the context of the component dictating the resumption of tasks
+    """
+    if (
+        resume_context.get('resume_hint') != RequestAssistanceResult.RESUME_CONTINUE
+        or resume_context.get('context', {}).get('task') is None
+    ):
+        return { k: v for k, v in resume_context.iteritems() if k != 'context' }
+    else:
+        return get_final_resume_context(resume_context['context'])
+
+
 def get_number_of_component_aborts(goal_context):
     """
     Given the hierarchy of tasks in the goal context, obtain a vector of the
@@ -124,6 +162,7 @@ def create_continue_result_context(goal_context):
         }
     else:
         return {}
+
 
 def set_task_hint_in_context(result_context, task_name, resume_hint):
     """

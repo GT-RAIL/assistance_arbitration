@@ -276,6 +276,11 @@ class ExecutionTracer(object):
         # Copy over the previous time-step's trace. Also recycle if the trace
         # is too long
         if num_events == ExecutionTracer.MAX_TRACE_LENGTH:
+            rospy.logwarn_once(
+                "Execution Tracer: Max trace length, {}, reached. Removing old events".format(
+                    ExecutionTracer.MAX_TRACE_LENGTH
+                )
+            )
             self._trace[:, :ExecutionTracer.MAX_TRACE_LENGTH-1] = self._trace[:, 1:]
 
         self._trace[:, num_events] = self._trace[:, num_events-1]
