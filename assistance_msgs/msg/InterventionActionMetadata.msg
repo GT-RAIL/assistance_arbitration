@@ -4,5 +4,8 @@
 # The name of the action
 string type
 
+# The status of the action
+uint8 status
+
 # Args to the action (optional). This is a pickled byte array
 string args

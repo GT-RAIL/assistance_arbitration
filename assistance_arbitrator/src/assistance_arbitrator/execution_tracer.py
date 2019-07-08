@@ -29,27 +29,14 @@ class classproperty(property):
         return classmethod(self.fget).__get__(None, owner)()
 
 
-EVENT_SIGNATURES = {
-    ExecutionEvent.TASK_STEP_EVENT: 'TASK_STEP',
-    ExecutionEvent.ROSGRAPH_EVENT: 'ROSGRAPH',
-    ExecutionEvent.MONITOR_EVENT: 'MONITOR',
-    ExecutionEvent.BELIEF_EVENT: 'BELIEF',
-}
-
-def get_event_type(event_signature):
-    global EVENT_SIGNATURES
-    return EVENT_SIGNATURES.get(event_signature, event_signature)
+EVENT_TYPE_DICT = { getattr(ExecutionEvent, x): x for x in dir(ExecutionEvent) if x.isupper() }
 
 
-EVENT_STATUSES = {
+EVENT_STATUS_DICT = {
     GoalStatus.ACTIVE: 0,
     GoalStatus.SUCCEEDED: 1,
     GoalStatus.ABORTED: -1,
 }
-
-def discretize_task_step_status(status):
-    global EVENT_STATUSES
-    return EVENT_STATUSES.get(status, np.nan)
 
 
 # The tracer object that collects the trace
@@ -195,6 +182,14 @@ class ExecutionTracer(object):
 
         return [ExecutionTracer.trace_types_idx[(trace_type, n,)] for n in trace_names]
 
+    @staticmethod
+    def get_event_type(event):
+        return EVENT_TYPE_DICT.get(event.type)
+
+    @staticmethod
+    def discretize_task_step_status(status):
+        return EVENT_STATUS_DICT.get(status, np.nan)
+
     @property
     def num_events(self):
         return len(self.full_trace)
@@ -252,7 +247,7 @@ class ExecutionTracer(object):
                 and ExecutionTracer.INCLUDE_UNKNOWN_TASK_EVENTS
             ):
                 rospy.logwarn("Execution Tracer: Unknown event {} ({})"
-                              .format(msg.name, get_event_type(msg.type)))
+                              .format(msg.name, ExecutionTracer.get_event_type(msg)))
                 return True
 
         # All is well, include in the trace
@@ -261,6 +256,8 @@ class ExecutionTracer(object):
     def update_trace(self, msg):
         """As messages come in, update the trace"""
         if self.exclude_from_trace(msg):
+            rospy.logwarn("Execution Tracer: Discarding event @ {} of type ({})"
+                          .format(msg.stamp, ExecutionTracer.get_event_type(msg)))
             return
 
         # If this is an unknown task and we need to keep track of unknown tasks,
@@ -303,7 +300,7 @@ class ExecutionTracer(object):
                 self._tasks_to_reset.add((msg.type, msg.name,))
 
             # Get the discretized status: -1, 0, 1
-            status = discretize_task_step_status(msg.task_step_metadata.status)
+            status = ExecutionTracer.discretize_task_step_status(msg.task_step_metadata.status)
             current_evt[ExecutionTracer.trace_types_idx[(msg.type, msg.name,)]] = status
         else:
             raise Exception("Unrecognized event {} of type {}"
@@ -311,7 +308,7 @@ class ExecutionTracer(object):
 
     def _get_parsed_trace_from_event(self, event):
         parsed_event = { 'time': event.stamp.to_time(),
-                         'type': get_event_type(event.type),
+                         'type': ExecutionTracer.get_event_type(event),
                          'name': event.name, }
 
         if event.type == ExecutionEvent.BELIEF_EVENT:
@@ -319,7 +316,7 @@ class ExecutionTracer(object):
         elif event.type == ExecutionEvent.MONITOR_EVENT:
             parsed_event['value'] = event.monitor_metadata.fault_status
         elif event.type == ExecutionEvent.TASK_STEP_EVENT:
-            parsed_event['value'] = discretize_task_step_status(event.task_step_metadata.status)
+            parsed_event['value'] = ExecutionTracer.discretize_task_step_status(event.task_step_metadata.status)
         else:
             parsed_event['type'] = parsed_event['name'] = parsed_event['value'] = None
 

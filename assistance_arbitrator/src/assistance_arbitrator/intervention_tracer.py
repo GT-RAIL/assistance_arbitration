@@ -15,8 +15,9 @@ from assistance_msgs.msg import (RequestAssistanceActionGoal,
                                  RequestAssistanceResult, InterventionEvent,
                                  InterventionHypothesisMetadata,
                                  InterventionActionMetadata,
-                                 InterventionStartEndMetadata)
+                                 InterventionStartEndMetadata, ExecutionEvent)
 
+from assistance_msgs import msg_utils
 from assistance_arbitrator.execution_tracer import ExecutionTracer, classproperty
 
 # Import isolation
@@ -30,35 +31,14 @@ from isolation.data.annotations import Annotations
 
 # Helper functions and classes
 
-EVENT_TYPE_DICT = {
-    InterventionEvent.START_OR_END_EVENT: {
-        InterventionStartEndMetadata.START: 'INT_START',
-        InterventionStartEndMetadata.END: 'INT_END',
-    },
-    InterventionEvent.HYPOTHESIS_EVENT: {
-        InterventionHypothesisMetadata.ABSENT: 'HYP_ABSENT',
-        InterventionHypothesisMetadata.SUSPECTED: 'HYP_SUSPECTED',
-        InterventionHypothesisMetadata.CONFIRMED: 'HYP_CONFIRMED',
-    },
-    InterventionEvent.ACTION_EVENT: 'INT_ACTION',
-}
-
-def get_event_type(event):
-    global EVENT_TYPE_DICT
-    event_type = None
-    if event.type == InterventionEvent.START_OR_END_EVENT:
-        event_type = EVENT_TYPE_DICT[event.type][event.start_end_metadata.status]
-    elif event.type == InterventionEvent.HYPOTHESIS_EVENT:
-        event_type = EVENT_TYPE_DICT[event.type][event.hypothesis_metadata.status]
-    elif event.type == InterventionEvent.ACTION_EVENT:
-        event_type = EVENT_TYPE_DICT[event.type]
-    return event_type
+EVENT_TYPE_DICT = { getattr(InterventionEvent, x): x for x in dir(InterventionEvent) if x.isupper() }
 
 
-RESUME_HINT_DICT = {
-    getattr(RequestAssistanceResult, x): x.lower()
-    for x in dir(RequestAssistanceResult)
-    if x.isupper()
+RESUME_HINT_DICT = { getattr(RequestAssistanceResult, x): x for x in dir(RequestAssistanceResult) if x.isupper() }
+
+
+HYPOTHESIS_STATUS_DICT = {
+    getattr(InterventionHypothesisMetadata, x): x for x in dir(InterventionHypothesisMetadata) if x.isupper()
 }
 
 
@@ -82,23 +62,22 @@ class InterventionTracer(object):
     EXCLUDE_HYPOTHESIS_EVENTS = set([])
     INCLUDE_HYPOTHESIS_EVENTS = []
 
-    EXCLUDE_ACTION_EVENTS = set([])
-    INCLUDE_ACTION_EVENTS = []
+    EXCLUDE_INT_ACTION_EVENTS = set([])
+    INCLUDE_INT_ACTION_EVENTS = []
 
-    EXCLUDE_START_EVENTS = set([])
-    INCLUDE_START_EVENTS = []
-
-    EXCLUDE_END_EVENTS = set([])
-    INCLUDE_END_EVENTS = []
+    EXCLUDE_TASK_STEP_EVENTS = set([])
+    INCLUDE_TASK_STEP_EVENTS = []
 
     # Flags to autopopulate the types of events to include or exclude
     AUTO_INCLUDE_HYPOTHESIS_EVENTS = True   # Populated from Annotations
-    AUTO_INCLUDE_ACTION_EVENTS = True       # Populated from InterventionActions
-    AUTO_INCLUDE_START_EVENTS = True        # Populated from ExecutionTracer.INCLUDE_TASK_STEP_EVENTS
-    AUTO_INCLUDE_END_EVENTS = True          # Populated from RequestAssistanceResult
+    AUTO_INCLUDE_INT_ACTION_EVENTS = True       # Populated from InterventionActions
+    AUTO_INCLUDE_TASK_STEP_EVENTS = True        # Populated from ExecutionTracer.INCLUDE_TASK_STEP_EVENTS
 
     DEFAULT_INTERVENTION_ACTIONS_PARAM = '/arbitrator/intervention_actions'
     DEFAULT_INTERVENTION_ACTIONS_PARAM_VALUE = "assistance_msgs.msg.InterventionActions"
+
+    FAILED_COMPONENT_TRACE_NAME = '<component>'
+    START_END_FLAG_TRACE_NAME = '<start_end>'
 
     # Ultimately, from the above these classproperties are populated
     _trace_types = None
@@ -134,7 +113,7 @@ class InterventionTracer(object):
                 ]
 
             # Auto generate the action events if the flag is set
-            if cls.AUTO_INCLUDE_ACTION_EVENTS:
+            if cls.AUTO_INCLUDE_INT_ACTION_EVENTS:
                 actions_param = rospy.get_param(
                     InterventionTracer.DEFAULT_INTERVENTION_ACTIONS_PARAM,
                     InterventionTracer.DEFAULT_INTERVENTION_ACTIONS_PARAM_VALUE
@@ -143,49 +122,46 @@ class InterventionTracer(object):
                 actions_module = importlib.import_module(actions_module)
                 actions_class = getattr(actions_module, actions_class)
 
-                cls.INCLUDE_ACTION_EVENTS += [
+                cls.INCLUDE_INT_ACTION_EVENTS += [
                     getattr(actions_class, x) for x in sorted(dir(actions_class))
                     if (
                         x.isupper()
-                        and getattr(actions_class, x) not in cls.EXCLUDE_ACTION_EVENTS
-                        and getattr(actions_class, x) not in cls.INCLUDE_ACTION_EVENTS
+                        and getattr(actions_class, x) not in cls.EXCLUDE_INT_ACTION_EVENTS
+                        and getattr(actions_class, x) not in cls.INCLUDE_INT_ACTION_EVENTS
                     )
                 ]
 
             # Auto generate the start events if the flag is set
-            if cls.AUTO_INCLUDE_START_EVENTS:
+            if cls.AUTO_INCLUDE_TASK_STEP_EVENTS:
                 # Initialize the ExecutionTracer trace types
                 _ = ExecutionTracer.trace_types
 
-                cls.INCLUDE_START_EVENTS += [
+                cls.INCLUDE_TASK_STEP_EVENTS += [
                     x for x in ExecutionTracer.INCLUDE_TASK_STEP_EVENTS
                     if (
-                        x not in cls.EXCLUDE_START_EVENTS
-                        and x not in cls.INCLUDE_START_EVENTS
+                        x not in cls.EXCLUDE_TASK_STEP_EVENTS
+                        and x not in cls.INCLUDE_TASK_STEP_EVENTS
                     )
                 ]
 
-            # Auto generate the end events if the flag is set
-            if cls.AUTO_INCLUDE_END_EVENTS:
-                cls.INCLUDE_END_EVENTS += [
-                    getattr(RequestAssistanceResult, x) for x in sorted(dir(RequestAssistanceResult))
-                    if (
-                        x.isupper()
-                        and getattr(RequestAssistanceResult, x) not in cls.EXCLUDE_END_EVENTS
-                        and getattr(RequestAssistanceResult, x) not in cls.INCLUDE_END_EVENTS
-                    )
-                ]
+            # Sanity check that the component name and the start/end flag will
+            # not be in conflict
+            assert InterventionTracer.FAILED_COMPONENT_TRACE_NAME not in cls.INCLUDE_TASK_STEP_EVENTS, \
+                "Rename Required: {} cannot be the name of a task or action".format(
+                    InterventionTracer.FAILED_COMPONENT_TRACE_NAME
+                )
+            assert InterventionTracer.START_END_FLAG_TRACE_NAME not in cls.INCLUDE_TASK_STEP_EVENTS, \
+                "Rename Required: {} cannot be the name of a task or action".format(
+                    InterventionTracer.START_END_FLAG_TRACE_NAME
+                )
 
             cls._trace_types = (
                 [(InterventionTracer.TIME_EVENT, None, 'time')]
-                + [(InterventionEvent.HYPOTHESIS_EVENT, getattr(InterventionHypothesisMetadata, y), x)
-                   for y in dir(InterventionHypothesisMetadata) if y.isupper() and y != 'ABSENT'
-                   for x in cls.INCLUDE_HYPOTHESIS_EVENTS]
-                + [(InterventionEvent.START_OR_END_EVENT, InterventionStartEndMetadata.START, x)
-                   for x in cls.INCLUDE_START_EVENTS]
-                + [(InterventionEvent.START_OR_END_EVENT, InterventionStartEndMetadata.END, x)
-                    for x in cls.INCLUDE_END_EVENTS]
-                + [(InterventionEvent.ACTION_EVENT, None, x) for x in cls.INCLUDE_ACTION_EVENTS]
+                + [(InterventionEvent.HYPOTHESIS_EVENT, x) for x in cls.INCLUDE_HYPOTHESIS_EVENTS]
+                + [(InterventionEvent.ACTION_EVENT, x) for x in cls.INCLUDE_INT_ACTION_EVENTS]
+                + [(InterventionEvent.START_OR_END_EVENT, x) for x in cls.INCLUDE_TASK_STEP_EVENTS]
+                + [(InterventionEvent.START_OR_END_EVENT, InterventionTracer.FAILED_COMPONENT_TRACE_NAME),
+                   (InterventionEvent.START_OR_END_EVENT, InterventionTracer.START_END_FLAG_TRACE_NAME)]
             )
 
         return cls._trace_types
@@ -197,22 +173,32 @@ class InterventionTracer(object):
         return cls._trace_types_idx
 
     @staticmethod
-    def trace_idx_by_type(super_type, sub_type):
-        if super_type == InterventionEvent.HYPOTHESIS_EVENT \
-                and sub_type in [InterventionHypothesisMetadata.SUSPECTED, InterventionHypothesisMetadata.CONFIRMED]:
+    def trace_idx_by_type(trace_type):
+        if trace_type == InterventionEvent.HYPOTHESIS_EVENT:
             trace_names = InterventionTracer.INCLUDE_HYPOTHESIS_EVENTS
-        elif super_type == InterventionEvent.START_OR_END_EVENT \
-                and sub_type == InterventionStartEndMetadata.START:
-            trace_names = InterventionTracer.INCLUDE_START_EVENTS
-        elif super_type == InterventionEvent.START_OR_END_EVENT \
-                and sub_type == InterventionStartEndMetadata.END:
-            trace_names = InterventionTracer.INCLUDE_END_EVENTS
-        elif super_type == InterventionEvent.ACTION_EVENT and sub_type is None:
-            trace_names = InterventionTracer.INCLUDE_ACTION_EVENTS
+        elif trace_type == InterventionEvent.ACTION_EVENT:
+            trace_names = InterventionTracer.INCLUDE_INT_ACTION_EVENTS
+        elif trace_type == InterventionEvent.START_OR_END_EVENT:
+            trace_names = InterventionTracer.INCLUDE_TASK_STEP_EVENTS
+        elif trace_type in [InterventionTracer.FAILED_COMPONENT_TRACE_NAME, InterventionTracer.START_END_FLAG_TRACE_NAME]:
+            trace_names = [trace_type]
+            trace_type = InterventionEvent.START_OR_END_EVENT
         else:
-            raise ValueError("Unknown trace type: ({}, {})".format(super_type, sub_type))
+            raise ValueError("Unknown trace type: {}".format(trace_type))
 
-        return [InterventionTracer.trace_types_idx[(super_type, sub_type, n,)] for n in trace_names]
+        return [InterventionTracer.trace_types_idx[(trace_type, n,)] for n in trace_names]
+
+    @staticmethod
+    def get_event_type(event):
+        return EVENT_TYPE_DICT.get(event.type)
+
+    @staticmethod
+    def get_hypothesis_status(event):
+        return HYPOTHESIS_STATUS_DICT.get(event.hypothesis_metadata.status)
+
+    @staticmethod
+    def get_resume_strategy(event):
+        return RESUME_HINT_DICT.get(event.start_end_metadata.response.resume_hint)
 
     @property
     def num_interventions(self):
@@ -270,10 +256,12 @@ class InterventionTracer(object):
         ):
             return True
 
+        # FIXME: Here onwards needs to be updated. Perhaps unpickle the context?
+        # That might be too much processing wastage
         if (
             msg.type == InterventionEvent.START_OR_END_EVENT
             and msg.start_end_metadata.status == InterventionStartEndMetadata.START
-            and (msg.type, msg.start_end_metadata.status, msg.start_end_metadata.request.component,)
+            and (msg.type, msg.start_end_metadata.request.component,)
                 not in InterventionTracer.trace_types_idx
         ):
             return True
@@ -338,14 +326,15 @@ class InterventionTracer(object):
 
     def update_trace(self, msg):
         if self.exclude_from_trace(msg):
-            rospy.logwarn("Discarding event @ {} of type ({})".format(msg.stamp, msg.type))
+            rospy.logwarn("Intervention Tracer: Discarding event @ {} of type ({})"
+                          .format(msg.stamp, InterventionTracer.get_event_type(msg)))
             return
 
         # If this is an unknown task failure, and the execution tracer is set to
         # monitor unknown tasks, then update the message
         if msg.type == InterventionEvent.START_OR_END_EVENT \
                 and msg.start_end_metadata.status == InterventionStartEndMetadata.START \
-                and msg.start_end_metadata.request.component not in InterventionTracer.INCLUDE_START_EVENTS \
+                and msg.start_end_metadata.request.component not in InterventionTracer.INCLUDE_TASK_STEP_EVENTS \
                 and ExecutionTracer.INCLUDE_UNKNOWN_TASK_EVENTS:
             msg.start_end_metadata.request.component = ExecutionTracer.UNKNOWN_TASK_NAME
 
@@ -361,9 +350,11 @@ class InterventionTracer(object):
 
         # If the trace is too long, throw an error and stop updating the arrays
         if num_events > InterventionTracer.MAX_TRACE_LENGTH:
-            rospy.logwarn("Trace Length of {} > Max Length {}. Not tracking".format(
-                num_events, InterventionTracer.MAX_TRACE_LENGTH
-            ))
+            rospy.logwarn(
+                "Intervention Tracer: Trace Length {} > Max Length {}. Not tracking".format(
+                    num_events, InterventionTracer.MAX_TRACE_LENGTH
+                )
+            )
             return
 
         # Copy the previous time stamp over; reset the actions
@@ -405,25 +396,24 @@ class InterventionTracer(object):
                 current_event[rows] = np.array([np.nan, 1.0])
 
     def _get_parsed_event_from_event(self, event):
-        global RESUME_HINT_DICT
-
-        # Parsed events for interventions have no 'value'
+        # Parsed events for interventions
         parsed_event = { 'time': event.stamp.to_time(),
-                         'type': get_event_type(event),
-                         'value': None, }
+                         'type': InterventionTracer.get_event_type(event) }
 
         if event.type == InterventionEvent.START_OR_END_EVENT:
-            parsed_event['name'] = (
+            parsed_event['name'] = event.start_end_metadata.status
+            parsed_event['value'] = (
                 event.start_end_metadata.request.component
                 if event.start_end_metadata.status == InterventionStartEndMetadata.START
-                else RESUME_HINT_DICT[event.start_end_metadata.response.resume_hint]
+                else InterventionTracer.get_resume_strategy(event)
             )
         elif event.type == InterventionEvent.HYPOTHESIS_EVENT:
             parsed_event['name'] = event.hypothesis_metadata.name
+            parsed_event['value'] = InterventionTracer.get_hypothesis_status(event)
         elif event.type == InterventionEvent.ACTION_EVENT:
             parsed_event['name'] = event.action_metadata.type
+            parsed_event['value'] = ExecutionTracer.discretize_task_step_status(event.action_metadata.status)
         else:
-            parsed_event['type'] = None
-            parsed_event['name'] = None
+            parsed_event['type'] = parsed_event['name'] = parsed_event['value'] = None
 
         return parsed_event
