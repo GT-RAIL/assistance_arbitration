@@ -4,14 +4,14 @@
 
   <arg name="arbitrator_config" default="$(find assistance_arbitrator)/config/arbitrator.yaml" />
 
+  <!-- Launch the arbitration server -->
+  <node name="arbitrator" pkg="assistance_arbitrator" type="server_node.py" output="screen">
+    <rosparam command="load" file="$(arg arbitrator_config)" />
+  </node>
+
   <!-- Launch the execution monitor -->
   <node name="execution_monitor" pkg="assistance_arbitrator" type="execution_monitor_node.py" />
 
   <!-- Launch the intervention monitor -->
   <node name="intervention_monitor" pkg="assistance_arbitrator" type="intervention_monitor_node.py" />
-
-  <!-- Launch the arbitration server -->
-  <node name="arbitrator" pkg="assistance_arbitrator" type="server_node.py" output="screen">
-    <rosparam command="load" file="$(arg arbitrator_config)" />
-  </node>
 </launch>

@@ -4,7 +4,9 @@
 from __future__ import print_function, division
 
 import sys
+import importlib
 import collections
+
 import numpy as np
 
 import rospy
@@ -15,8 +17,7 @@ from assistance_msgs.msg import (RequestAssistanceActionGoal,
                                  InterventionActionMetadata,
                                  InterventionStartEndMetadata)
 
-from assistance_arbitrator.execution_tracer import (Tracer as ExecutionTracer,
-                                                    classproperty)
+from assistance_arbitrator.execution_tracer import ExecutionTracer, classproperty
 
 # Import isolation
 try:
@@ -63,11 +64,11 @@ RESUME_HINT_DICT = {
 
 # The tracer class
 
-class Tracer(object):
+class InterventionTracer(object):
     """
     Monitors the actions taken during an intervention and logs them to enable
     continual learning of recovery actions. This class functions similarly to
-    the Tracer class, which monitors the robot execution trace.
+    the ExecutionTracer class, which monitors the robot execution trace.
     """
 
     INTERVENTION_TRACE_TOPIC = '/intervention_monitor/trace'
@@ -92,9 +93,12 @@ class Tracer(object):
 
     # Flags to autopopulate the types of events to include or exclude
     AUTO_INCLUDE_HYPOTHESIS_EVENTS = True   # Populated from Annotations
-    AUTO_INCLUDE_ACTION_EVENTS = True       # Populated from InterventionActionMetadata
+    AUTO_INCLUDE_ACTION_EVENTS = True       # Populated from InterventionActions
     AUTO_INCLUDE_START_EVENTS = True        # Populated from ExecutionTracer.INCLUDE_TASK_STEP_EVENTS
     AUTO_INCLUDE_END_EVENTS = True          # Populated from RequestAssistanceResult
+
+    DEFAULT_INTERVENTION_ACTIONS_PARAM = '/arbitrator/intervention_actions'
+    DEFAULT_INTERVENTION_ACTIONS_PARAM_VALUE = "assistance_msgs.msg.InterventionActions"
 
     # Ultimately, from the above these classproperties are populated
     _trace_types = None
@@ -111,7 +115,7 @@ class Tracer(object):
 
         # The subscriber to track the trace
         self._trace_sub = rospy.Subscriber(
-            Tracer.INTERVENTION_TRACE_TOPIC,
+            InterventionTracer.INTERVENTION_TRACE_TOPIC,
             InterventionEvent,
             self.update_trace
         )
@@ -131,12 +135,20 @@ class Tracer(object):
 
             # Auto generate the action events if the flag is set
             if cls.AUTO_INCLUDE_ACTION_EVENTS:
+                actions_param = rospy.get_param(
+                    InterventionTracer.DEFAULT_INTERVENTION_ACTIONS_PARAM,
+                    InterventionTracer.DEFAULT_INTERVENTION_ACTIONS_PARAM_VALUE
+                )
+                actions_module, actions_class = actions_param.rsplit('.', 1)
+                actions_module = importlib.import_module(actions_module)
+                actions_class = getattr(actions_module, actions_class)
+
                 cls.INCLUDE_ACTION_EVENTS += [
-                    getattr(InterventionActionMetadata, x) for x in sorted(dir(InterventionActionMetadata))
+                    getattr(actions_class, x) for x in sorted(dir(actions_class))
                     if (
                         x.isupper()
-                        and getattr(InterventionActionMetadata, x) not in cls.EXCLUDE_ACTION_EVENTS
-                        and getattr(InterventionActionMetadata, x) not in cls.INCLUDE_ACTION_EVENTS
+                        and getattr(actions_class, x) not in cls.EXCLUDE_ACTION_EVENTS
+                        and getattr(actions_class, x) not in cls.INCLUDE_ACTION_EVENTS
                     )
                 ]
 
@@ -165,7 +177,7 @@ class Tracer(object):
                 ]
 
             cls._trace_types = (
-                [(Tracer.TIME_EVENT, None, 'time')]
+                [(InterventionTracer.TIME_EVENT, None, 'time')]
                 + [(InterventionEvent.HYPOTHESIS_EVENT, getattr(InterventionHypothesisMetadata, y), x)
                    for y in dir(InterventionHypothesisMetadata) if y.isupper() and y != 'ABSENT'
                    for x in cls.INCLUDE_HYPOTHESIS_EVENTS]
@@ -181,26 +193,26 @@ class Tracer(object):
     @classproperty
     def trace_types_idx(cls):
         if cls._trace_types_idx is None:
-            cls._trace_types_idx = { x: i for i, x in enumerate(Tracer.trace_types) }
+            cls._trace_types_idx = { x: i for i, x in enumerate(InterventionTracer.trace_types) }
         return cls._trace_types_idx
 
     @staticmethod
     def trace_idx_by_type(super_type, sub_type):
         if super_type == InterventionEvent.HYPOTHESIS_EVENT \
                 and sub_type in [InterventionHypothesisMetadata.SUSPECTED, InterventionHypothesisMetadata.CONFIRMED]:
-            trace_names = Tracer.INCLUDE_HYPOTHESIS_EVENTS
+            trace_names = InterventionTracer.INCLUDE_HYPOTHESIS_EVENTS
         elif super_type == InterventionEvent.START_OR_END_EVENT \
                 and sub_type == InterventionStartEndMetadata.START:
-            trace_names = Tracer.INCLUDE_START_EVENTS
+            trace_names = InterventionTracer.INCLUDE_START_EVENTS
         elif super_type == InterventionEvent.START_OR_END_EVENT \
                 and sub_type == InterventionStartEndMetadata.END:
-            trace_names = Tracer.INCLUDE_END_EVENTS
+            trace_names = InterventionTracer.INCLUDE_END_EVENTS
         elif super_type == InterventionEvent.ACTION_EVENT and sub_type is None:
-            trace_names = Tracer.INCLUDE_ACTION_EVENTS
+            trace_names = InterventionTracer.INCLUDE_ACTION_EVENTS
         else:
             raise ValueError("Unknown trace type: ({}, {})".format(super_type, sub_type))
 
-        return [Tracer.trace_types_idx[(super_type, sub_type, n,)] for n in trace_names]
+        return [InterventionTracer.trace_types_idx[(super_type, sub_type, n,)] for n in trace_names]
 
     @property
     def num_interventions(self):
@@ -232,10 +244,10 @@ class Tracer(object):
         self._should_trace = False
 
     def initialize_traces(self):
-        self.full_traces.append(collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH))
+        self.full_traces.append(collections.deque(maxlen=InterventionTracer.MAX_TRACE_LENGTH))
         if self._create_parsed_events:
-            self.parsed_traces.append(collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH))
-        self._traces.append(np.ones((len(Tracer.trace_types), Tracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan)
+            self.parsed_traces.append(collections.deque(maxlen=InterventionTracer.MAX_TRACE_LENGTH))
+        self._traces.append(np.ones((len(InterventionTracer.trace_types), InterventionTracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan)
 
     def exclude_from_trace(self, msg):
         """Check to see if the message should be excluded from the trace"""
@@ -262,7 +274,7 @@ class Tracer(object):
             msg.type == InterventionEvent.START_OR_END_EVENT
             and msg.start_end_metadata.status == InterventionStartEndMetadata.START
             and (msg.type, msg.start_end_metadata.status, msg.start_end_metadata.request.component,)
-                not in Tracer.trace_types_idx
+                not in InterventionTracer.trace_types_idx
         ):
             return True
 
@@ -271,7 +283,7 @@ class Tracer(object):
             msg.type == InterventionEvent.START_OR_END_EVENT
             and msg.start_end_metadata.status == InterventionStartEndMetadata.END
             and (msg.type, msg.start_end_metadata.status, msg.start_end_metadata.response.resume_hint)
-                not in Tracer.trace_types_idx
+                not in InterventionTracer.trace_types_idx
         ):
             return True
 
@@ -288,13 +300,13 @@ class Tracer(object):
         if (
             msg.type == InterventionEvent.HYPOTHESIS_EVENT
             and (msg.type, InterventionHypothesisMetadata.CONFIRMED, msg.hypothesis_metadata.name)
-                not in Tracer.trace_types_idx
+                not in InterventionTracer.trace_types_idx
         ):
             return True
 
         if (
             msg.type == InterventionEvent.ACTION_EVENT
-            and (msg.type, None, msg.action_metadata.type) not in Tracer.trace_types_idx
+            and (msg.type, None, msg.action_metadata.type) not in InterventionTracer.trace_types_idx
         ):
             return True
 
@@ -333,7 +345,7 @@ class Tracer(object):
         # monitor unknown tasks, then update the message
         if msg.type == InterventionEvent.START_OR_END_EVENT \
                 and msg.start_end_metadata.status == InterventionStartEndMetadata.START \
-                and msg.start_end_metadata.request.component not in Tracer.INCLUDE_START_EVENTS \
+                and msg.start_end_metadata.request.component not in InterventionTracer.INCLUDE_START_EVENTS \
                 and ExecutionTracer.INCLUDE_UNKNOWN_TASK_EVENTS:
             msg.start_end_metadata.request.component = ExecutionTracer.UNKNOWN_TASK_NAME
 
@@ -348,9 +360,9 @@ class Tracer(object):
             self.parsed_traces[-1].append(self._get_parsed_event_from_event(msg))
 
         # If the trace is too long, throw an error and stop updating the arrays
-        if num_events > Tracer.MAX_TRACE_LENGTH:
+        if num_events > InterventionTracer.MAX_TRACE_LENGTH:
             rospy.logwarn("Trace Length of {} > Max Length {}. Not tracking".format(
-                num_events, Tracer.MAX_TRACE_LENGTH
+                num_events, InterventionTracer.MAX_TRACE_LENGTH
             ))
             return
 
@@ -358,30 +370,30 @@ class Tracer(object):
         self._traces[-1][:, num_events] = self._traces[-1][:, num_events-1]
         current_event = self._traces[-1][:, num_events]
         current_event[0] = msg.stamp.to_time()
-        current_event[Tracer.trace_idx_by_type(InterventionEvent.ACTION_EVENT, None)] = np.nan
+        current_event[InterventionTracer.trace_idx_by_type(InterventionEvent.ACTION_EVENT, None)] = np.nan
 
         # Based on the type, update the trace
         if msg.type == InterventionEvent.START_OR_END_EVENT \
                 and msg.start_end_metadata.status == InterventionStartEndMetadata.START:
-            row = Tracer.trace_types_idx[(msg.type,
+            row = InterventionTracer.trace_types_idx[(msg.type,
                                           msg.start_end_metadata.status,
                                           msg.start_end_metadata.request.component,)]
             current_event[row] = 1.0
         elif msg.type == InterventionEvent.START_OR_END_EVENT \
                 and msg.start_end_metadata.status == InterventionStartEndMetadata.END:
-            row = Tracer.trace_types_idx[(msg.type,
+            row = InterventionTracer.trace_types_idx[(msg.type,
                                           msg.start_end_metadata.status,
                                           msg.start_end_metadata.response.resume_hint,)]
             current_event[row] = 1.0
         elif msg.type == InterventionEvent.ACTION_EVENT:
-            row = Tracer.trace_types_idx[(msg.type, None, msg.action_metadata.type,)]
+            row = InterventionTracer.trace_types_idx[(msg.type, None, msg.action_metadata.type,)]
             current_event[row] = 1.0
         elif msg.type == InterventionEvent.HYPOTHESIS_EVENT:
             rows = [
-                Tracer.trace_types_idx[(msg.type,
+                InterventionTracer.trace_types_idx[(msg.type,
                                         InterventionHypothesisMetadata.SUSPECTED,
                                         msg.hypothesis_metadata.name,)],
-                Tracer.trace_types_idx[(msg.type,
+                InterventionTracer.trace_types_idx[(msg.type,
                                         InterventionHypothesisMetadata.CONFIRMED,
                                         msg.hypothesis_metadata.name,)]
             ]

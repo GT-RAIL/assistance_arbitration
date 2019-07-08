@@ -28,7 +28,7 @@ from assistance_msgs.srv import (EnableRemoteControl,
 from std_srvs.srv import Trigger, TriggerResponse
 
 from task_executor.actions import get_default_actions
-from assistance_arbitrator.intervention_tracer import Tracer as InterventionTracer
+from assistance_arbitrator.intervention_tracer import InterventionTracer
 from remote_strategy.server import RemoteRecoveryServer
 
 # Plotly, Dash, and Flask

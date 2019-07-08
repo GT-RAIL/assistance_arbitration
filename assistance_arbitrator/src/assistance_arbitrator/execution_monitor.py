@@ -6,7 +6,7 @@ from __future__ import print_function, division
 
 import rospy
 
-from assistance_arbitrator.execution_tracer import Tracer
+from assistance_arbitrator.execution_tracer import ExecutionTracer
 
 from std_srvs.srv import Trigger, TriggerResponse
 
@@ -24,7 +24,7 @@ class ExecutionMonitor(object):
 
     def __init__(self):
         # Supplementary execution monitors
-        self.tracer = Tracer()
+        self.tracer = ExecutionTracer()
 
         # Setup the services for the trace
         self._trace_start_service = rospy.Service(ExecutionMonitor.TRACE_START_SERVICE, Trigger, self.start)

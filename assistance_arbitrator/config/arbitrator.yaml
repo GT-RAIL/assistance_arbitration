@@ -3,3 +3,5 @@ strategies:
   - predefined_strategy
   - remote_strategy
   - local_strategy
+
+intervention_actions: assistance_msgs.msg.InterventionActions

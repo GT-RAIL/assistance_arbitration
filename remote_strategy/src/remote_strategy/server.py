@@ -20,7 +20,7 @@ from assistance_msgs.srv import (EnableRemoteControl, EnableRemoteControlRequest
                                  DisableRemoteControl)
 from std_srvs.srv import Trigger, TriggerResponse
 
-from assistance_arbitrator.intervention_tracer import Tracer as InterventionTracer
+from assistance_arbitrator.intervention_tracer import InterventionTracer
 
 
 # The server performs local behaviours ro resume execution after contacting a

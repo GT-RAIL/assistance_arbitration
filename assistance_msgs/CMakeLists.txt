@@ -76,6 +76,7 @@ add_message_files(
   InterventionStartEndMetadata.msg
   InterventionHypothesisMetadata.msg
   InterventionActionMetadata.msg
+  InterventionActions.msg
 )
 
 ## Generate services in the 'srv' folder

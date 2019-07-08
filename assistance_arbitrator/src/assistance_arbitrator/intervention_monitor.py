@@ -13,7 +13,7 @@ import rospy
 
 from std_srvs.srv import Trigger, TriggerResponse
 
-from assistance_arbitrator.intervention_tracer import Tracer
+from assistance_arbitrator.intervention_tracer import InterventionTracer
 
 # The main monitor class
 
@@ -27,7 +27,7 @@ class InterventionMonitor(object):
 
     def __init__(self):
         # The sub-monitors
-        self.tracer = Tracer()
+        self.tracer = InterventionTracer()
 
         # Setup the services for the trace
         self._trace_start_service = rospy.Service(InterventionMonitor.TRACE_START_SERVICE, Trigger, self.start)

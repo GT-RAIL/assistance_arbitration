@@ -14,7 +14,7 @@ from assistance_msgs.srv import (EnableRemoteControl,
                                  DisableRemoteControlResponse)
 from std_srvs.srv import Trigger, TriggerResponse
 
-from assistance_arbitrator.intervention_tracer import Tracer as InterventionTracer
+from assistance_arbitrator.intervention_tracer import InterventionTracer
 from remote_strategy.server import RemoteRecoveryServer
 
 

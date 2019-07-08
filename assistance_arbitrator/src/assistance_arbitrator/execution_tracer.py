@@ -16,6 +16,8 @@ from actionlib_msgs.msg import GoalStatus
 from assistance_msgs.msg import (ExecutionEvent, TaskStepMetadata,
                                  MonitorMetadata, BeliefMetadata, BeliefKeys)
 
+from task_executor.actions import action_names
+
 
 # Helper functions and classes
 
@@ -52,7 +54,7 @@ def discretize_task_step_status(status):
 
 # The tracer object that collects the trace
 
-class Tracer(object):
+class ExecutionTracer(object):
     """
     This class monitors the execution trace messages and compiles the data into
     a events trace stream
@@ -67,33 +69,6 @@ class Tracer(object):
     # Events to ignore
     EXCLUDE_BELIEF_EVENTS = set([])
     EXCLUDE_MONITOR_EVENTS = set([
-        'diagnostics_update: Charger',
-        'diagnostics_update: Gripper IMU Accelerometer',
-        'diagnostics_update: Gripper IMU Gyro',
-        'diagnostics_update: IMU 1 Accelerometer',
-        'diagnostics_update: IMU 1 Gyro',
-        'diagnostics_update: Mainboard',
-        'diagnostics_update: battery_breaker',
-        'diagnostics_update: computer_breaker',
-        'diagnostics_update: elbow_flex_mcb',
-        'diagnostics_update: forearm_roll_mcb',
-        'diagnostics_update: gripper_board_mcb',
-        'diagnostics_update: head_pan_mcb',
-        'diagnostics_update: head_tilt_mcb',
-        'diagnostics_update: joy: Joystick Driver Status',
-        'diagnostics_update: joy_node: Joystick Driver Status',
-        'diagnostics_update: l_wheel_mcb',
-        'diagnostics_update: r_wheel_mcb',
-        'diagnostics_update: shoulder_lift_mcb',
-        'diagnostics_update: shoulder_pan_mcb',
-        'diagnostics_update: sick_tim551_2050001: /base_scan_raw topic status',
-        'diagnostics_update: sound_play: Node State',
-        'diagnostics_update: supply_breaker',
-        'diagnostics_update: torso_lift_mcb',
-        'diagnostics_update: upperarm_roll_mcb',
-        'diagnostics_update: velodyne_link_nodelet_manager: velodyne_packets topic status',
-        'diagnostics_update: wrist_flex_mcb',
-        'diagnostics_update: wrist_roll_mcb',
         'task_action_recv_result',
         'task_action_send_goal',
         'task_action_cancel',
@@ -106,33 +81,12 @@ class Tracer(object):
     # Events to include. These are a list because they need to be ordered
     INCLUDE_BELIEF_EVENTS = []
     INCLUDE_MONITOR_EVENTS = [
-        'arm_contact_update',
-        'base_collision_update',
-        'base_stall_update',
-        'battery_state_update',
         'breaker_state_update',
-        'costmap_update',
-        'diagnostics_update: arm_breaker',
-        'diagnostics_update: base_breaker',
-        'diagnostics_update: gripper_breaker',
-        'diagnostics_update: point_cloud_diagnostic: delay',
-        'global_plan_collision_update',
-        'localization_update',
-        'look_direction_update',
-        'moveit_update: motion plan failure',
-        'moveit_update: invalid motion plan',
-        'moveit_update: environment changed',
-        'moveit_update: controller failed',
-        'moveit_update: other failure',
-        'segmentation_update',
         'wifi_update',
     ]
     INCLUDE_TASK_STEP_EVENTS = []
     UNKNOWN_TASK_NAME = '<unknown>'
-    DEFAULT_TASK_DEFINITIONS_FILE = os.path.join(
-        rospkg.RosPack().get_path('task_executor'),
-        'config', 'tasks.yaml'
-    )
+    DEFAULT_TASKS_PARAM = '/task_executor/tasks'
 
     # This is a vector, used to index into rows
     _trace_types = None
@@ -150,12 +104,12 @@ class Tracer(object):
         self._create_parsed_events = create_parsed_events
 
         # Book-keeping variables to keep track of the trace state
-        self.full_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
+        self.full_trace = collections.deque(maxlen=ExecutionTracer.MAX_TRACE_LENGTH)
         if self._create_parsed_events:
-            self.parsed_trace = collections.deque(maxlen=Tracer.MAX_TRACE_LENGTH)
+            self.parsed_trace = collections.deque(maxlen=ExecutionTracer.MAX_TRACE_LENGTH)
         else:
             self.parsed_trace = None
-        self._trace = np.ones((len(Tracer.trace_types), Tracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan
+        self._trace = np.ones((len(ExecutionTracer.trace_types), ExecutionTracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan
         self._should_trace = False  # Variable that determines whether to trace
 
         # Book-keeping variables to help with the trace parsing
@@ -166,7 +120,7 @@ class Tracer(object):
 
         # Setup the subscriber to track the trace
         self._trace_sub = rospy.Subscriber(
-            Tracer.EXECUTION_TRACE_TOPIC,
+            ExecutionTracer.EXECUTION_TRACE_TOPIC,
             ExecutionEvent,
             self.update_trace
         )
@@ -189,23 +143,24 @@ class Tracer(object):
             if cls.AUTO_INCLUDE_TASK_EVENTS:
 
                 # First fetch all the defined actions
-                from task_executor.actions import default_actions_dict
-                actions = list(default_actions_dict.keys())
-                del default_actions_dict
+                actions = set(action_names)
 
                 # Then fetch all the defined tasks
-                with open(Tracer.DEFAULT_TASK_DEFINITIONS_FILE, 'r') as fd:
-                    definitions = yaml.load(fd)
-                    tasks = list(definitions['tasks'].keys())
+                tasks = rospy.get_param(ExecutionTracer.DEFAULT_TASKS_PARAM, {})
+                tasks = set(tasks.keys())
+
+                # Make sure that there are no duplicates
+                assert len(actions & tasks) == 0, \
+                    "Rename Required: {} are defined as both tasks and actions".format((actions & tasks))
 
                 # Finally, create the list of events to include
                 cls.INCLUDE_TASK_STEP_EVENTS += [
-                    x for x in sorted(actions + tasks)
+                    x for x in sorted((actions | tasks))
                     if (x not in cls.EXCLUDE_TASK_STEP_EVENTS and x not in cls.INCLUDE_TASK_STEP_EVENTS)
                 ]
 
             cls._trace_types = (
-                [(Tracer.TIME_EVENT, 'time')]
+                [(ExecutionTracer.TIME_EVENT, 'time')]
                 + [(ExecutionEvent.BELIEF_EVENT, name) for name in cls.INCLUDE_BELIEF_EVENTS]
                 + [(ExecutionEvent.MONITOR_EVENT, name) for name in cls.INCLUDE_MONITOR_EVENTS]
                 + [(ExecutionEvent.TASK_STEP_EVENT, name) for name in cls.INCLUDE_TASK_STEP_EVENTS]
@@ -214,9 +169,9 @@ class Tracer(object):
             # If unknown task events should be included (which includes the
             # excluded events), then create a placeholder for them
             if cls.INCLUDE_UNKNOWN_TASK_EVENTS:
-                cls.INCLUDE_TASK_STEP_EVENTS.append(Tracer.UNKNOWN_TASK_NAME)
+                cls.INCLUDE_TASK_STEP_EVENTS.append(ExecutionTracer.UNKNOWN_TASK_NAME)
                 cls._trace_types.append(
-                    (ExecutionEvent.TASK_STEP_EVENT, Tracer.UNKNOWN_TASK_NAME)
+                    (ExecutionEvent.TASK_STEP_EVENT, ExecutionTracer.UNKNOWN_TASK_NAME)
                 )
 
         return cls._trace_types
@@ -224,21 +179,21 @@ class Tracer(object):
     @classproperty
     def trace_types_idx(cls):
         if cls._trace_types_idx is None:
-            cls._trace_types_idx = { x: i for i, x in enumerate(Tracer.trace_types) }
+            cls._trace_types_idx = { x: i for i, x in enumerate(ExecutionTracer.trace_types) }
         return cls._trace_types_idx
 
     @staticmethod
     def trace_idx_by_type(trace_type):
         if trace_type == ExecutionEvent.BELIEF_EVENT:
-            trace_names = Tracer.INCLUDE_BELIEF_EVENTS
+            trace_names = ExecutionTracer.INCLUDE_BELIEF_EVENTS
         elif trace_type == ExecutionEvent.MONITOR_EVENT:
-            trace_names = Tracer.INCLUDE_MONITOR_EVENTS
+            trace_names = ExecutionTracer.INCLUDE_MONITOR_EVENTS
         elif trace_type == ExecutionEvent.TASK_STEP_EVENT:
-            trace_names = Tracer.INCLUDE_TASK_STEP_EVENTS
+            trace_names = ExecutionTracer.INCLUDE_TASK_STEP_EVENTS
         else:
             raise ValueError("Unknown trace type: {}".format(trace_type))
 
-        return [Tracer.trace_types_idx[(trace_type, n,)] for n in trace_names]
+        return [ExecutionTracer.trace_types_idx[(trace_type, n,)] for n in trace_names]
 
     @property
     def num_events(self):
@@ -262,7 +217,7 @@ class Tracer(object):
             self.parsed_trace.append(self._get_parsed_trace_from_event(event))
 
         self._trace[0, 0] = start_time.to_time()
-        for idx, trace_spec in enumerate(Tracer.trace_types):
+        for idx, trace_spec in enumerate(ExecutionTracer.trace_types):
             if trace_spec[0] == ExecutionEvent.MONITOR_EVENT:
                 self._trace[idx, 0] = MonitorMetadata.NOMINAL
 
@@ -277,26 +232,26 @@ class Tracer(object):
             return True
 
         # Make sure to exclude the subevents that we don't care about
-        if msg.name in Tracer.EXCLUDE_BELIEF_EVENTS and msg.type == ExecutionEvent.BELIEF_EVENT:
+        if msg.name in ExecutionTracer.EXCLUDE_BELIEF_EVENTS and msg.type == ExecutionEvent.BELIEF_EVENT:
             return True
 
-        if msg.name in Tracer.EXCLUDE_MONITOR_EVENTS and msg.type == ExecutionEvent.MONITOR_EVENT:
+        if msg.name in ExecutionTracer.EXCLUDE_MONITOR_EVENTS and msg.type == ExecutionEvent.MONITOR_EVENT:
             return True
 
         # Excluded task events are counted as unknowns
-        if not Tracer.INCLUDE_UNKNOWN_TASK_EVENTS \
-                and msg.name in Tracer.EXCLUDE_TASK_STEP_EVENTS \
+        if not ExecutionTracer.INCLUDE_UNKNOWN_TASK_EVENTS \
+                and msg.name in ExecutionTracer.EXCLUDE_TASK_STEP_EVENTS \
                 and msg.type == ExecutionEvent.TASK_STEP_EVENT:
             return True
 
         # Warn if there is an event that isn't a known trace type
-        if (msg.type, msg.name) not in Tracer.trace_types:
+        if (msg.type, msg.name) not in ExecutionTracer.trace_types:
             # Check that this is not an unknown task we should in fact include
             if not (
                 msg.type == ExecutionEvent.TASK_STEP_EVENT
-                and Tracer.INCLUDE_UNKNOWN_TASK_EVENTS
+                and ExecutionTracer.INCLUDE_UNKNOWN_TASK_EVENTS
             ):
-                rospy.logwarn("Unknown event {} ({})"
+                rospy.logwarn("Execution Tracer: Unknown event {} ({})"
                               .format(msg.name, get_event_type(msg.type)))
                 return True
 
@@ -311,9 +266,9 @@ class Tracer(object):
         # If this is an unknown task and we need to keep track of unknown tasks,
         # then modify the message and keep track of the event
         if msg.type == ExecutionEvent.TASK_STEP_EVENT \
-                and (msg.type, msg.name) not in Tracer.trace_types \
-                and Tracer.INCLUDE_UNKNOWN_TASK_EVENTS:
-            msg.name = Tracer.UNKNOWN_TASK_NAME
+                and (msg.type, msg.name) not in ExecutionTracer.trace_types \
+                and ExecutionTracer.INCLUDE_UNKNOWN_TASK_EVENTS:
+            msg.name = ExecutionTracer.UNKNOWN_TASK_NAME
 
         # Append to the full trace
         num_events = self.num_events  # Keep track of the old num_events
@@ -323,8 +278,8 @@ class Tracer(object):
 
         # Copy over the previous time-step's trace. Also recycle if the trace
         # is too long
-        if num_events == Tracer.MAX_TRACE_LENGTH:
-            self._trace[:, :Tracer.MAX_TRACE_LENGTH-1] = self._trace[:, 1:]
+        if num_events == ExecutionTracer.MAX_TRACE_LENGTH:
+            self._trace[:, :ExecutionTracer.MAX_TRACE_LENGTH-1] = self._trace[:, 1:]
 
         self._trace[:, num_events] = self._trace[:, num_events-1]
         current_evt = self._trace[:, num_events]
@@ -332,15 +287,15 @@ class Tracer(object):
 
         # Update all the tasks that have completed
         for task_spec in self._tasks_to_reset:
-            current_evt[Tracer.trace_types_idx[task_spec]] = np.nan
+            current_evt[ExecutionTracer.trace_types_idx[task_spec]] = np.nan
         self._tasks_to_reset = set()
 
         # Update the task step according to the incoming data
         if msg.type == ExecutionEvent.BELIEF_EVENT:
-            current_evt[Tracer.trace_types_idx[(msg.type, msg.name,)]] = \
+            current_evt[ExecutionTracer.trace_types_idx[(msg.type, msg.name,)]] = \
                 msg.belief_metadata.value
         elif msg.type == ExecutionEvent.MONITOR_EVENT:
-            current_evt[Tracer.trace_types_idx[(msg.type, msg.name,)]] = \
+            current_evt[ExecutionTracer.trace_types_idx[(msg.type, msg.name,)]] = \
                 msg.monitor_metadata.fault_status
         elif msg.type == ExecutionEvent.TASK_STEP_EVENT:
             # Add the task to the list of tasks completed during this iteration
@@ -349,7 +304,7 @@ class Tracer(object):
 
             # Get the discretized status: -1, 0, 1
             status = discretize_task_step_status(msg.task_step_metadata.status)
-            current_evt[Tracer.trace_types_idx[(msg.type, msg.name,)]] = status
+            current_evt[ExecutionTracer.trace_types_idx[(msg.type, msg.name,)]] = status
         else:
             raise Exception("Unrecognized event {} of type {}"
                             .format(msg.name, msg.type))

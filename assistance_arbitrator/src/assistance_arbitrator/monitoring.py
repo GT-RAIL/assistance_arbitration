@@ -13,7 +13,7 @@ import rospy
 
 from assistance_msgs.msg import ExecutionEvent, MonitorMetadata, BeliefMetadata
 
-from assistance_arbitrator.execution_tracer import Tracer
+from assistance_arbitrator.execution_tracer import ExecutionTracer
 
 
 # The class definitions
@@ -32,7 +32,7 @@ class AbstractFaultMonitor(object):
 
         # The trace publisher
         self._trace = rospy.Publisher(
-            Tracer.EXECUTION_TRACE_TOPIC,
+            ExecutionTracer.EXECUTION_TRACE_TOPIC,
             ExecutionEvent,
             queue_size=10
         )
@@ -91,7 +91,7 @@ class AbstractBeliefMonitor(object):
 
         # The trace publisher
         self._trace = rospy.Publisher(
-            Tracer.EXECUTION_TRACE_TOPIC,
+            ExecutionTracer.EXECUTION_TRACE_TOPIC,
             ExecutionEvent,
             queue_size=10
         )
