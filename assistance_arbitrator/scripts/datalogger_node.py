@@ -54,7 +54,7 @@ class DataLogger(object):
     ROSPARAM_CMD = [
         'rosparam',
         'dump',
-        'derail_%Y-%m-%d-%H-%M-%S.yaml'
+        'derail_%Y-%m-%d-%H-%M-%S_0.yaml'
     ]
     ROSBAG_KILL_CMD = ['rosnode', 'kill', 'datalogger_record']
 
