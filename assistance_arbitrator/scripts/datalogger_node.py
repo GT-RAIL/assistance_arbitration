@@ -7,6 +7,7 @@ from __future__ import print_function, division
 import os
 import sys
 import copy
+import datetime
 import subprocess
 
 from ruamel.yaml import YAML
@@ -42,13 +43,18 @@ class DataLogger(object):
 
     ROSBAG_CMD = [
         'rosbag', 'record',
-        '--duration=10m',  # Automatically split every 10m
+        '-O', 'derail_%Y-%m-%d-%H-%M-%S.bag',
+        '--duration=60m',  # Automatically split every 60m
         '--split',
-        '-o', 'fetch-deliver',
         '-b', "0",
         '--chunksize=1024',
         '--lz4',
         '__name:=datalogger_record'
+    ]
+    ROSPARAM_CMD = [
+        'rosparam',
+        'dump',
+        'derail_%Y-%m-%d-%H-%M-%S.yaml'
     ]
     ROSBAG_KILL_CMD = ['rosnode', 'kill', 'datalogger_record']
 
@@ -87,7 +93,16 @@ class DataLogger(object):
         if self._bag_process is not None:
             return
 
+        current_time = datetime.datetime.now()
+
+        # Dump the parameter file
+        cmd = copy.copy(DataLogger.ROSPARAM_CMD)
+        cmd[-1] = current_time.strftime(cmd[-1])
+        subprocess.check_call(cmd, cwd=DataLogger.DATA_DIRECTORY)
+
+        # Start the bag command parsing
         cmd = copy.copy(DataLogger.ROSBAG_CMD)
+        cmd[3] = current_time.strftime(cmd[3])
 
         # Get the configuration
         if rospy.get_param(DataLogger.CONFIG_PARAM, None) is not None:
@@ -116,7 +131,7 @@ class DataLogger(object):
 
         print(cmd)
 
-        # Open the process
+        # Open the process, and don't forward signals
         self._bag_process = subprocess.Popen(
             cmd,
             cwd=DataLogger.DATA_DIRECTORY,
