@@ -204,11 +204,19 @@ class InterventionTracer(object):
             event_type = (event.type, event.hypothesis_metadata.status,)
         else:
             event_type = event.type
+        return InterventionTracer.get_event_type_str(event_type)
+
+    @staticmethod
+    def get_event_type_str(event_type):
         return EVENT_TYPE_DICT.get(event_type)
 
     @staticmethod
     def get_hypothesis_status(event):
-        return HYPOTHESIS_STATUS_DICT.get(event.hypothesis_metadata.status)
+        return InterventionTracer.get_hypothesis_status_str(event.hypothesis_metadata.status)
+
+    @staticmethod
+    def get_hypothesis_status_str(hypothesis_status):
+        return HYPOTHESIS_STATUS_DICT.get(hypothesis_status)
 
     @staticmethod
     def get_resume_strategy(event):
