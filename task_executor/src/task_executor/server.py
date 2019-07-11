@@ -131,7 +131,7 @@ class TaskServer(object):
             return
 
         # Fetch the params from the goal
-        params = (pickle.loads(goal.params) if goal.params != '' else {})
+        params = msg_utils.unpickle_context(goal.params)
         if not isinstance(params, dict):
             rospy.logerr("Task {}: UNRECOGNIZED params - {}".format(goal.name, params))
             self._server.set_aborted(result)

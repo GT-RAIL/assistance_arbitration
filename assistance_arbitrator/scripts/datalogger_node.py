@@ -116,7 +116,7 @@ class DataLogger(object):
         # Update the cmd
         if len(self.config['include_regex']) > 0:
             included_topics = "|".join(self.config['include_regex'])
-            print(included_topics)
+            rospy.logdebug(included_topics)
             cmd.append('-e')
             cmd.append('{}'.format(included_topics))
 
@@ -125,11 +125,11 @@ class DataLogger(object):
 
         if len(self.config['exclude_regex']) > 0:
             excluded_topics = "|".join(self.config['exclude_regex'])
-            print(excluded_topics)
+            rospy.logdebug(excluded_topics)
             cmd.append('-x')
             cmd.append('{}'.format(excluded_topics))
 
-        print(cmd)
+        rospy.logdebug(cmd)
 
         # Open the process, and don't forward signals
         self._bag_process = subprocess.Popen(
