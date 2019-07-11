@@ -282,5 +282,9 @@ class TaskServer(object):
         rospy.sleep(0.5)
 
     def _validate_tasks(self, tasks):
-        # We don't need to validate yet. But perhaps soon
+        # Ensure that the task's definition will not cause interpreter issues
+        for task_name, task_def in tasks.iteritems():
+            assert ('name' not in task_def and 'actions' not in task_def and 'tasks' not in task_def), \
+                "Invalid task config - {}: {}".format(task_name, task_def)
+
         return tasks
