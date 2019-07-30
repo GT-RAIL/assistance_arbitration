@@ -256,7 +256,7 @@ class ExecutionTracer(object):
     def update_trace(self, msg):
         """As messages come in, update the trace"""
         if self.exclude_from_trace(msg):
-            if not self._should_trace:
+            if self._should_trace:
                 rospy.logwarn("Execution Tracer: Discarding event @ {} of type ({})"
                               .format(msg.stamp, ExecutionTracer.get_event_type(msg)))
             return

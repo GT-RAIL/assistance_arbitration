@@ -363,7 +363,7 @@ class InterventionTracer(object):
 
         # Check to see if this message is valid
         if self.exclude_from_trace(msg):
-            if not self._should_trace:
+            if self._should_trace:
                 rospy.logwarn("Intervention Tracer: Discarding event @ {} of type ({})"
                               .format(msg.stamp, InterventionTracer.get_event_type(msg, complete=True)))
             return
