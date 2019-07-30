@@ -163,7 +163,7 @@ class InterventionTracer(object):
                 )
 
             cls._trace_types = (
-                [(InterventionTracer.TIME_EVENT, None, 'time')]
+                [(InterventionTracer.TIME_EVENT, 'time')]
                 + [(InterventionEvent.HYPOTHESIS_EVENT, x) for x in cls.INCLUDE_HYPOTHESIS_EVENTS]
                 + [(InterventionEvent.ACTION_EVENT, x) for x in cls.INCLUDE_INT_ACTION_EVENTS]
                 + [(InterventionEvent.START_OR_END_EVENT, x) for x in cls.INCLUDE_TASK_STEP_EVENTS]
