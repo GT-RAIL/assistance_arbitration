@@ -363,8 +363,9 @@ class InterventionTracer(object):
 
         # Check to see if this message is valid
         if self.exclude_from_trace(msg):
-            rospy.logwarn("Intervention Tracer: Discarding event @ {} of type ({})"
-                          .format(msg.stamp, InterventionTracer.get_event_type(msg, complete=True)))
+            if not self._should_trace:
+                rospy.logwarn("Intervention Tracer: Discarding event @ {} of type ({})"
+                              .format(msg.stamp, InterventionTracer.get_event_type(msg, complete=True)))
             return
 
         # If the trace is too long, warn and stop updating the arrays
@@ -432,6 +433,7 @@ class InterventionTracer(object):
                 and msg.start_end_metadata.status == InterventionStartEndMetadata.START:
             # First update the tasks in the context
             context = msg.start_end_metadata.request.context
+            task_name = msg.start_end_metadata.request.component  # Temporary
             while context is not None:
                 task_name = context.get('task') or context.get('action')
                 row = InterventionTracer.trace_types_idx[(msg.type, task_name)]
@@ -449,6 +451,8 @@ class InterventionTracer(object):
                 and msg.start_end_metadata.status == InterventionStartEndMetadata.END:
             # First update the tasks in the context
             context = msg.start_end_metadata.response.context
+            # TODO: We need to save the tasks because context can be None when
+            # none of the high level tasks need to be resumed.
             while context is not None and len(context) > 0:
                 task_name = context['task']
                 row = InterventionTracer.trace_types_idx[(msg.type, task_name)]
