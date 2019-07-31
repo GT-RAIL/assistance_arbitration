@@ -297,7 +297,8 @@ class ExecutionTracer(object):
                     ExecutionTracer.MAX_TRACE_LENGTH
                 )
             )
-            self._trace[:, :ExecutionTracer.MAX_TRACE_LENGTH-1] = self._trace[:, 1:]
+            self._trace[:, :ExecutionTracer.MAX_TRACE_LENGTH-2] = self._trace[:, 1:]
+            num_events = num_events - 1
 
         self._trace[:, num_events] = self._trace[:, num_events-1]
         current_evt = self._trace[:, num_events]
