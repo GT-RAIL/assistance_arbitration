@@ -16,7 +16,8 @@ from assistance_msgs.msg import (RequestAssistanceActionGoal,
                                  RequestAssistanceResult, InterventionEvent,
                                  InterventionHypothesisMetadata,
                                  InterventionActionMetadata,
-                                 InterventionStartEndMetadata, ExecutionEvent)
+                                 InterventionStartEndMetadata, ExecutionEvent,
+                                 TraceVector)
 
 from assistance_msgs import msg_utils
 from assistance_arbitrator.execution_tracer import ExecutionTracer, classproperty
@@ -59,7 +60,8 @@ class InterventionTracer(object):
     """
 
     INTERVENTION_TRACE_TOPIC = '/intervention_monitor/trace'
-    MAX_TRACE_LENGTH = 999
+    INTERVENTION_TRACE_VECTOR_TOPIC = '/intervention_monitor/trace_vector'
+    MAX_TRACE_LENGTH = 999  # If there are more than 1000 things during interventions...
 
     # Stub event type definition
     TIME_EVENT = ExecutionTracer.TIME_EVENT
@@ -98,6 +100,17 @@ class InterventionTracer(object):
         self.parsed_traces = []
         self._traces = []
         self._should_trace = False
+
+        # Setup the publisher (and helpers) to publish trace vectors
+        self._trace_vector_msg = TraceVector()
+        for trace_spec in InterventionTracer.trace_types:
+            self._trace_vector_msg.fields.append(str(trace_spec))
+
+        self._trace_vector_pub = rospy.Publisher(
+            InterventionTracer.INTERVENTION_TRACE_VECTOR_TOPIC,
+            TraceVector,
+            queue_size=10
+        )
 
         # The subscriber to track the trace
         self._trace_sub = rospy.Subscriber(
@@ -231,6 +244,13 @@ class InterventionTracer(object):
         if self.num_interventions == 0:
             return None
         return self.full_traces[-1][-1]
+
+    @property
+    def last_intervention_start(self):
+        """The start event for the last intervention"""
+        if self.num_interventions == 0:
+            return None
+        return self.full_traces[-1][0]
 
     def num_events(self, trace_idx):
         if len(self.full_traces) == 0:
@@ -433,7 +453,7 @@ class InterventionTracer(object):
                 and msg.start_end_metadata.status == InterventionStartEndMetadata.START:
             # First update the tasks in the context
             context = msg.start_end_metadata.request.context
-            task_name = msg.start_end_metadata.request.component  # Temporary
+            task_name = msg.start_end_metadata.request.component
             while context is not None:
                 task_name = context.get('task') or context.get('action')
                 row = InterventionTracer.trace_types_idx[(msg.type, task_name)]
@@ -449,10 +469,11 @@ class InterventionTracer(object):
         # Then if it was an end
         elif msg.type == InterventionEvent.START_OR_END_EVENT \
                 and msg.start_end_metadata.status == InterventionStartEndMetadata.END:
-            # First update the tasks in the context
+            # First update the tasks in the context. Get the task name from the
+            # start of the intervention, and use that in case the resumption
+            # context is empty
             context = msg.start_end_metadata.response.context
-            # TODO: We need to save the tasks because context can be None when
-            # none of the high level tasks need to be resumed.
+            task_name = self.last_intervention_start.start_end_metadata.request.component
             while context is not None and len(context) > 0:
                 task_name = context['task']
                 row = InterventionTracer.trace_types_idx[(msg.type, task_name)]
@@ -463,6 +484,7 @@ class InterventionTracer(object):
                 context = context.get('context')
 
             # Then update the flag. The component name is the last component
+            # that dictates the resumption of the task tree
             row = InterventionTracer.trace_types_idx[(msg.type, InterventionTracer.FAILED_COMPONENT_TRACE_NAME)]
             current_event[row] = InterventionTracer.INCLUDE_TASK_STEP_EVENTS.index(task_name)
             row = InterventionTracer.trace_types_idx[(msg.type, InterventionTracer.START_END_FLAG_TRACE_NAME)]
@@ -473,10 +495,22 @@ class InterventionTracer(object):
             row = InterventionTracer.trace_types_idx[(msg.type, msg.action_metadata.type,)]
             current_event[row] = ExecutionTracer.discretize_task_step_status(msg.action_metadata.status)
 
-        # Finally, if it was a hypothesis event
+        # Then if it was a hypothesis event
         elif msg.type == InterventionEvent.HYPOTHESIS_EVENT:
             row = InterventionTracer.trace_types_idx[(msg.type, msg.hypothesis_metadata.name,)]
-            current_event = msg.hypothesis_metadata.status
+            current_event[row] = msg.hypothesis_metadata.status
+
+        # Finally, a catch-all exception
+        else:
+            raise Exception("Unrecognized event type {}".format(msg.type))
+
+        # In the end, publish the latest trace vector
+        self.publish_trace_vector(msg.stamp, current_event)
+
+    def publish_trace_vector(self, timestamp, data_vector):
+        self._trace_vector_msg.stamp = timestamp
+        self._trace_vector_msg.data = data_vector
+        self._trace_vector_pub.publish(self._trace_vector_msg)
 
     def _get_parsed_event_from_event(self, event):
         # Parsed events for interventions

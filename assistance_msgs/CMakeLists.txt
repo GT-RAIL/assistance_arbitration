@@ -77,6 +77,9 @@ add_message_files(
   InterventionHypothesisMetadata.msg
   InterventionActionMetadata.msg
   InterventionActions.msg
+
+  # Traces
+  TraceVector.msg
 )
 
 ## Generate services in the 'srv' folder

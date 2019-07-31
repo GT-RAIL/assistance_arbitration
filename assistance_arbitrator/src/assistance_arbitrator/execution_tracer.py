@@ -14,7 +14,8 @@ import rospkg
 
 from actionlib_msgs.msg import GoalStatus
 from assistance_msgs.msg import (ExecutionEvent, TaskStepMetadata,
-                                 MonitorMetadata, BeliefMetadata, BeliefKeys)
+                                 MonitorMetadata, BeliefMetadata, BeliefKeys,
+                                 TraceVector)
 
 from task_executor.actions import action_names
 
@@ -48,7 +49,8 @@ class ExecutionTracer(object):
     """
 
     EXECUTION_TRACE_TOPIC = '/execution_monitor/trace'
-    MAX_TRACE_LENGTH = 9999
+    EXECUTION_TRACE_VECTOR_TOPIC = '/execution_monitor/trace_vector'
+    MAX_TRACE_LENGTH = 3999  # The longest trace so far has 1106 events
 
     # Stub event type definition
     TIME_EVENT = 255
@@ -90,6 +92,9 @@ class ExecutionTracer(object):
         start_time = start_time or rospy.Time.now()
         self._create_parsed_events = create_parsed_events
 
+        # Variable that determines whether to trace
+        self._should_trace = False
+
         # Book-keeping variables to keep track of the trace state
         self.full_trace = collections.deque(maxlen=ExecutionTracer.MAX_TRACE_LENGTH)
         if self._create_parsed_events:
@@ -97,13 +102,23 @@ class ExecutionTracer(object):
         else:
             self.parsed_trace = None
         self._trace = np.ones((len(ExecutionTracer.trace_types), ExecutionTracer.MAX_TRACE_LENGTH,), dtype=np.float) * np.nan
-        self._should_trace = False  # Variable that determines whether to trace
 
         # Book-keeping variables to help with the trace parsing
         self._tasks_to_reset = set()
 
         # Initialize the trace
         self.initialize_trace(start_time)
+
+        # Setup the publisher (and helpers) to publish trace vectors.
+        self._trace_vector_msg = TraceVector()
+        for trace_spec in ExecutionTracer.trace_types:
+            self._trace_vector_msg.fields.append(str(trace_spec))
+
+        self._trace_vector_pub = rospy.Publisher(
+            ExecutionTracer.EXECUTION_TRACE_VECTOR_TOPIC,
+            TraceVector,
+            queue_size=10
+        )
 
         # Setup the subscriber to track the trace
         self._trace_sub = rospy.Subscriber(
@@ -309,8 +324,15 @@ class ExecutionTracer(object):
             status = ExecutionTracer.discretize_task_step_status(msg.task_step_metadata.status)
             current_evt[ExecutionTracer.trace_types_idx[(msg.type, msg.name,)]] = status
         else:
-            raise Exception("Unrecognized event {} of type {}"
-                            .format(msg.name, msg.type))
+            raise Exception("Unrecognized event {} of type {}".format(msg.name, msg.type))
+
+        # Finally, publish the updated trace vector
+        self.publish_trace_vector(msg.stamp, current_evt)
+
+    def publish_trace_vector(self, timestamp, data_vector):
+        self._trace_vector_msg.stamp = timestamp
+        self._trace_vector_msg.data = data_vector
+        self._trace_vector_pub.publish(self._trace_vector_msg)
 
     def _get_parsed_trace_from_event(self, event):
         parsed_event = { 'time': event.stamp.to_time(),
