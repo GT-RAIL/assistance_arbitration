@@ -345,7 +345,9 @@ class AbstractStep(object):
     def __call__(self, **params):
         """
         Calls the :meth:`run` generator internally and returns this node's
-        :attr:`status`. This is a blocking call.
+        :attr:`status`. This is a blocking call. Assertion errors that are
+        encountered in this call are caught and forwarded as an exception, with
+        the status of the step set to ABORTED
 
         Args:
             params (kwargs) : Keyword args that might be relevant to the step
@@ -356,8 +358,11 @@ class AbstractStep(object):
                     :attr:`status`
                 - variables (dict) the last yielded dictionary from :meth:`run`
         """
-        for variables in self.run(**params):
-            if rospy.is_shutdown():
-                break
+        try:
+            for variables in self.run(**params):
+                if rospy.is_shutdown():
+                    break
+        except AssertionError as e:
+            variables = self.set_aborted(exception=e)
 
         return (self.status, variables,)
