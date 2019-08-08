@@ -45,7 +45,9 @@ EVENT_STATUS_DICT = {
 class ExecutionTracer(object):
     """
     This class monitors the execution trace messages and compiles the data into
-    a events trace stream
+    a events trace stream. Note that there are methods (static and otherwise) at
+    the end of this class that provide functionality to do more time-intensive
+    operations that cannot/should not be performed when the robot is running.
     """
 
     EXECUTION_TRACE_TOPIC = '/execution_monitor/trace'
@@ -350,3 +352,31 @@ class ExecutionTracer(object):
             parsed_event['type'] = parsed_event['name'] = parsed_event['value'] = None
 
         return parsed_event
+
+    ### The following methods are meant to be used only during offline
+    ### processing of the trace; use online at your own risk.
+
+    @staticmethod
+    def update_task_stack_from_trace(stack, trace_vector):
+        """
+        Given a task execution stack and the latest trace vector, either update
+        the stack, or leave it be depending on all the tasks that are currently
+        enabled in the trace vector.
+
+        The stack should contain the indices of
+        :const:`ExecutionEvent.TASK_STEP_EVENT` in the execution trace. Note
+        that the indices will correspond to the index of the event type in the
+        full trace, and not just its index among all the task event types.
+
+        Recommendation: in order to ensure consistent data, make sure that the
+        input stack is populated by a previous execution of this method.
+
+        Args:
+            stack (list, collections.deque) : the stack of tasks so far (we do \
+                need to a collections.deque will not work as well)
+            trace_vector (list, np.array) : 1-D array of the trace vector
+
+        Returns:
+            stack (list) : the stack, possibly modified
+        """
+        tasks_in_stack = set(stack)
