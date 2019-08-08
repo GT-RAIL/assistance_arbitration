@@ -4,6 +4,7 @@
 from __future__ import print_function, division
 
 import os
+import copy
 import collections
 import numpy as np
 
@@ -368,6 +369,9 @@ class ExecutionTracer(object):
         that the indices will correspond to the index of the event type in the
         full trace, and not just its index among all the task event types.
 
+        The input trace is the full trace vector and not just the task trace
+        vector. Sending in the task trace vector would be bad.
+
         Recommendation: in order to ensure consistent data, make sure that the
         input stack is populated by a previous execution of this method.
 
@@ -379,4 +383,50 @@ class ExecutionTracer(object):
         Returns:
             stack (list) : the stack, possibly modified
         """
-        tasks_in_stack = set(stack)
+        out_stack = copy.copy(stack)
+        task_indices = ExecutionTracer.trace_idx_by_type(ExecutionEvent.TASK_STEP_EVENT)
+        running_tasks = ~np.isnan(trace_vector)[task_indices]
+        running_task_idx = task_indices[running_tasks]
+
+        # If there is no task in the stack
+        if len(stack) == 0:
+            if np.any(running_tasks):
+                # Print a warning if there are more than 1; something's wrong
+                # continue regardless
+                if len(running_task_idx) > 1:
+                    rospy.logwarn("Execution Tracer: {} are simultaneously being added to the task stack".format(
+                        running_task_idx
+                    ))
+
+                out_stack.extend(running_task_idx.tolist())
+
+        # If the last task is still executing, then we either have to do nothing
+        # or we have to add more tasks to the stack
+        elif trace_vector[stack[-1]] == ExecutionTracer.discretize_task_step_status(GoalStatus.ACTIVE):
+            if len(stack) != len(running_task_idx):
+                # Print an warning if we're adding more than one task to the
+                # stack; continue anyway
+                if len(stack) != len(running_task_idx) - 1:
+                    rospy.logwarn("Execution Tracer: stack {} will grow to {}".format(
+                        stack, running_task_idx
+                    ))
+
+                out_stack.extend(set(running_task_idx) - set(stack))
+
+        # If the last task is not executing, then figure out how many other
+        # tasks we might have to pop as well (only pop once the task is NaN)
+        elif np.isnan(trace_vector[stack[-1]]):
+            num_removed = 0
+            while len(out_stack) > 0 and np.isnan(trace_vector[out_stack[-1]]):
+                removed_task = out_stack.pop()
+
+                # If we've removed more than one task, warn, but continue
+                num_removed = num_removed + 1
+                if num_removed > 1:
+                    rospy.logwarn("Execution Tracer: (#{} removal) removed {} from stack".format(
+                        num_removed,
+                        removed_task
+                    ))
+
+        # Return the processed stack
+        return out_stack
