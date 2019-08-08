@@ -358,6 +358,32 @@ class ExecutionTracer(object):
     ### processing of the trace; use online at your own risk.
 
     @staticmethod
+    def get_current_action(trace_vector):
+        """
+        Given a trace vector and the list of actions get the current action that
+        is executing provided both the tracer and the actions list know about it
+
+        Args:
+            trace_vector (np.array) : 1-D array of the trace vector
+
+        Returns:
+            str : the name of the currently executing action or None
+        """
+        action_indices = np.array([
+            ExecutionTracer.trace_types_idx[(ExecutionEvent.TASK_STEP_EVENT, n,)] for n in action_names
+        ])
+        running_actions = np.where(~np.isnan(trace_vector)[action_indices])[0]
+
+        # Return only if there is one action running
+        if len(running_actions) == 0:
+            return None
+        elif len(running_actions) > 1:
+            rospy.logwarn("Execution Tracer: Multiple actions running - {}".format(running_actions))
+            return None
+        else:
+            return ExecutionTracer.trace_types[action_indices[running_actions[0]]][1]
+
+    @staticmethod
     def update_task_stack_from_trace(stack, trace_vector):
         """
         Given a task execution stack and the latest trace vector, either update
@@ -378,13 +404,16 @@ class ExecutionTracer(object):
         Args:
             stack (list, collections.deque) : the stack of tasks so far (we do \
                 need to a collections.deque will not work as well)
-            trace_vector (list, np.array) : 1-D array of the trace vector
+            trace_vector (np.array) : 1-D array of the trace vector
 
         Returns:
-            stack (list) : the stack, possibly modified
+            stack (list, collections.deque) : the stack, possibly modified
         """
+        # FIXME: There is some bug here that needs to be fixed; for now DO NOT
+        # use this method; as useful as it might be
+
         out_stack = copy.copy(stack)
-        task_indices = ExecutionTracer.trace_idx_by_type(ExecutionEvent.TASK_STEP_EVENT)
+        task_indices = np.array(ExecutionTracer.trace_idx_by_type(ExecutionEvent.TASK_STEP_EVENT))
         running_tasks = ~np.isnan(trace_vector)[task_indices]
         running_task_idx = task_indices[running_tasks]
 
