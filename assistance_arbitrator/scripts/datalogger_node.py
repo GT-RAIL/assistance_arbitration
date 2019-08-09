@@ -37,7 +37,7 @@ class DataLogger(object):
     DATA_DIRECTORY = os.path.join(
         rospkg.RosPack().get_path('assistance_arbitrator'),
         'data',
-        '2019-07-10'
+        '2019-08-09'
         # NOTE: Make sure to update the above to the desired subfolder / symlink
     )
 
