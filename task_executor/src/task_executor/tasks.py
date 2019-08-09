@@ -337,6 +337,7 @@ class Task(AbstractStep):
                         task=self.name,
                         step_idx=self.step_idx,
                         step_name=step_name,
+                        params=msg_utils.pprint_context(step_params),
                         context=variables
                     )
                     raise StopIteration()
@@ -355,6 +356,7 @@ class Task(AbstractStep):
                         task=self.name,
                         step_idx=self.step_idx,
                         step_name=step_name,
+                        params=msg_utils.pprint_context(step_params),
                         context=variables
                     )
                     raise StopIteration()
