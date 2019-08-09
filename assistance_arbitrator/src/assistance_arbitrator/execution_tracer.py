@@ -385,7 +385,7 @@ class ExecutionTracer(object):
             rospy.logwarn("Execution Tracer: Multiple actions running - {}".format(running_actions))
 
         return [
-            ExecutionTracer.trace_types[action_indices[running_actions[idx]]][1]
+            ExecutionTracer.trace_types[action_indices[idx]][1]
             for idx in running_actions
         ]
 
