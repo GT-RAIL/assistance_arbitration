@@ -362,7 +362,7 @@ class AbstractStep(object):
             for variables in self.run(**params):
                 if rospy.is_shutdown():
                     break
-        except AssertionError as e:
+        except Exception as e:
             variables = self.set_aborted(exception=e)
 
         return (self.status, variables,)

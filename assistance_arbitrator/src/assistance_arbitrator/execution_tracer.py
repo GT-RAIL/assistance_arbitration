@@ -363,25 +363,31 @@ class ExecutionTracer(object):
         Given a trace vector and the list of actions get the current action that
         is executing provided both the tracer and the actions list know about it
 
+        If there are multiple actions executing simultaneously, the
+
         Args:
             trace_vector (np.array) : 1-D array of the trace vector
 
         Returns:
-            str : the name of the currently executing action or None
+            list of str : the names of the currently executing action or None
         """
         action_indices = np.array([
             ExecutionTracer.trace_types_idx[(ExecutionEvent.TASK_STEP_EVENT, n,)] for n in action_names
         ])
         running_actions = np.where(~np.isnan(trace_vector)[action_indices])[0]
 
-        # Return only if there is one action running
+        # Return None if there are no actions; warn if there are more than 1
+        # actions executing. Finally, just return the list of actions
         if len(running_actions) == 0:
             return None
-        elif len(running_actions) > 1:
+
+        if len(running_actions) > 1:
             rospy.logwarn("Execution Tracer: Multiple actions running - {}".format(running_actions))
-            return None
-        else:
-            return ExecutionTracer.trace_types[action_indices[running_actions[0]]][1]
+
+        return [
+            ExecutionTracer.trace_types[action_indices[running_actions[idx]]][1]
+            for idx in running_actions
+        ]
 
     @staticmethod
     def update_task_stack_from_trace(stack, trace_vector):
