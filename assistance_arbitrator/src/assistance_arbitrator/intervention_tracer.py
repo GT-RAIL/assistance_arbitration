@@ -372,7 +372,8 @@ class InterventionTracer(object):
 
     def update_trace(self, msg):
         # Unpickle the context if this a start or end event. We will need this
-        # later in the processing pipeline
+        # later in the processing pipeline. NOTE: we copy the part below into
+        # parse_bags.py; remember to change it there if this bit changes.
         if msg.type == InterventionEvent.START_OR_END_EVENT:
             if msg.start_end_metadata.status == InterventionStartEndMetadata.START:
                 msg.start_end_metadata.request.context = \
