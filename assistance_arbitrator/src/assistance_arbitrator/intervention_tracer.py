@@ -12,6 +12,7 @@ import numpy as np
 
 import rospy
 
+from actionlib_msgs.msg import GoalStatus
 from assistance_msgs.msg import (RequestAssistanceActionGoal,
                                  RequestAssistanceResult, InterventionEvent,
                                  InterventionHypothesisMetadata,
@@ -387,6 +388,16 @@ class InterventionTracer(object):
                 rospy.logwarn("Intervention Tracer: Discarding event @ {} of type ({})"
                               .format(msg.stamp, InterventionTracer.get_event_type(msg, complete=True)))
             return
+
+        # Special bugfix for the relocalize action. FIXME: This is study
+        # specific; and should not be allowed into the release code
+        if self._create_parsed_events:
+            if (
+                msg.type == InterventionEvent.ACTION_EVENT
+                and msg.action_metadata.type == 'relocalize'
+                and msg.action_metadata.status not in [GoalStatus.SUCCEEDED, GoalStatus.ABORTED, GoalStatus.ACTIVE]
+            ):
+                msg.action_metadata.status = GoalStatus.SUCCEEDED
 
         # If the trace is too long, warn and stop updating the arrays
         num_events = self.num_events(-1)
