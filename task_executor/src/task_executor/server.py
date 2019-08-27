@@ -240,11 +240,7 @@ class TaskServer(object):
                     self._server.set_aborted(result)
                     return
                 else:  # GoalStatus.SUCCEEDED
-                    assist_result.context = (
-                        pickle.loads(assist_result.context)
-                        if assist_result.context != ''
-                        else {}
-                    )
+                    assist_result.context = msg_utils.unpickle_context(assist_result.context)
                     rospy.loginfo("Assistance request COMPLETED. Resume ({}): {}"
                                   .format(assist_result.resume_hint, assist_result.context))
                     if assist_result.resume_hint != RequestAssistanceResult.RESUME_NONE:
