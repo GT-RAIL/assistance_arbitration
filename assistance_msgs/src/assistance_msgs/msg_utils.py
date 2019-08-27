@@ -7,6 +7,8 @@ import pickle
 
 from assistance_msgs.msg import RequestAssistanceResult
 
+from assistance_msgs import constants
+
 
 # The different utility functions
 
@@ -83,8 +85,8 @@ def get_final_component_context(goal_context):
     Returns
         (dict)
     """
-    if len(goal_context.get('context', {})) > 0:
-        return get_final_component_context(goal_context['context'])
+    if len(goal_context.get(constants.TASK_CONTEXT_KEYS.CONTEXT, {})) > 0:
+        return get_final_component_context(goal_context[constants.TASK_CONTEXT_KEYS.CONTEXT])
     else:
         return goal_context
 
@@ -103,12 +105,12 @@ def get_final_resume_context(resume_context):
         (dict) : the context of the component dictating the resumption of tasks
     """
     if (
-        resume_context.get('resume_hint') != RequestAssistanceResult.RESUME_CONTINUE
-        or resume_context.get('context', {}).get('task') is None
+        resume_context.get(constants.TASK_CONTEXT_KEYS.RESUME_HINT) != RequestAssistanceResult.RESUME_CONTINUE
+        or resume_context.get(constants.TASK_CONTEXT_KEYS.CONTEXT, {}).get(constants.TASK_CONTEXT_KEYS.TASK) is None
     ):
-        return { k: v for k, v in resume_context.iteritems() if k != 'context' }
+        return { k: v for k, v in resume_context.iteritems() if k != constants.TASK_CONTEXT_KEYS.CONTEXT }
     else:
-        return get_final_resume_context(resume_context['context'])
+        return get_final_resume_context(resume_context[constants.TASK_CONTEXT_KEYS.CONTEXT])
 
 
 def get_number_of_component_aborts(goal_context):
@@ -133,9 +135,9 @@ def get_number_of_component_aborts(goal_context):
     sub_context = goal_context
 
     while sub_context is not None and isinstance(sub_context, dict):
-        component_names.append(sub_context.get('task') or sub_context.get('action'))
-        num_aborts.append(sub_context.get('num_aborts'))
-        sub_context = sub_context.get('context')
+        component_names.append(sub_context.get(constants.TASK_CONTEXT_KEYS.TASK) or sub_context.get(constants.TASK_CONTEXT_KEYS.ACTION))
+        num_aborts.append(sub_context.get(constants.TASK_CONTEXT_KEYS.NUM_ABORTS))
+        sub_context = sub_context.get(constants.TASK_CONTEXT_KEYS.CONTEXT)
 
     # Return the lists
     return (component_names, num_aborts,)
@@ -153,12 +155,12 @@ def create_continue_result_context(goal_context):
     Return:
         (dict) : the result context
     """
-    if 'task' in goal_context:
+    if constants.TASK_CONTEXT_KEYS.TASK in goal_context:
         return {
-            'task': goal_context['task'],
-            'step_idx': goal_context['step_idx'],
-            'resume_hint': RequestAssistanceResult.RESUME_CONTINUE,
-            'context': create_continue_result_context(goal_context['context']),
+            constants.TASK_CONTEXT_KEYS.TASK: goal_context[constants.TASK_CONTEXT_KEYS.TASK],
+            constants.TASK_CONTEXT_KEYS.STEP_IDX: goal_context[constants.TASK_CONTEXT_KEYS.STEP_IDX],
+            constants.TASK_CONTEXT_KEYS.RESUME_HINT: RequestAssistanceResult.RESUME_CONTINUE,
+            constants.TASK_CONTEXT_KEYS.CONTEXT: create_continue_result_context(goal_context[constants.TASK_CONTEXT_KEYS.CONTEXT]),
         }
     else:
         return {}
@@ -186,14 +188,15 @@ def set_task_hint_in_context(result_context, task_name, resume_hint):
     """
 
     # Error checking
-    if 'task' not in result_context:
+    if constants.TASK_CONTEXT_KEYS.TASK not in result_context:
         raise KeyError("Expected a result context for tasks. Not found in {}!".format(result_context))
 
     # If this is not the task we want, then continue on to its context.
     # Otherwise, mark this task as the one we want to update and return
-    if result_context['task'] == task_name:
-        result_context['resume_hint'] = resume_hint
+    if result_context[constants.TASK_CONTEXT_KEYS.TASK] == task_name:
+        result_context[constants.TASK_CONTEXT_KEYS.RESUME_HINT] = resume_hint
     else:
-        result_context['context'] = set_task_hint_in_context(result_context['context'], task_name, resume_hint)
+        result_context[constants.TASK_CONTEXT_KEYS.CONTEXT] = \
+            set_task_hint_in_context(result_context[constants.TASK_CONTEXT_KEYS.CONTEXT], task_name, resume_hint)
 
     return result_context
