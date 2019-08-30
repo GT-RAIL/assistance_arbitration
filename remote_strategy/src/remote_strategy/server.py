@@ -62,6 +62,7 @@ class RemoteRecoveryServer(object):
             rospy.logerr("Remote: Unable to parse RViz view - {}".format(e))
             self._rviz_view = None
         self._rviz_process = None
+        self._rviz_terminated_by_controller = False
 
         # A service that can be called when the recovery process is complete
         self._completion_service = rospy.Service(
@@ -102,12 +103,14 @@ class RemoteRecoveryServer(object):
         enable_req = EnableRemoteControlRequest(request=goal)
         self._controller_enable_srv(enable_req)
 
-        # Start an rviz process and wait until it is shut
-        self._rviz_process = subprocess.Popen(
-            ["rosrun", "rviz", "rviz", "-d", self._rviz_view]
-        )
-        self._rviz_process.wait()
-        self._rviz_process = None
+        # Start an rviz process and wait until it is shut by the controller
+        self._rviz_terminated_by_controller = False
+        while not self._rviz_terminated_by_controller:
+            self._rviz_process = subprocess.Popen(
+                ["rosrun", "rviz", "rviz", "-d", self._rviz_view]
+            )
+            self._rviz_process.wait()
+            self._rviz_process = None
 
         # Get the desired resumption strategy
         disable_resp = self._controller_disable_srv()
@@ -127,6 +130,7 @@ class RemoteRecoveryServer(object):
         pass
 
     def _intervention_complete(self, req=None):
+        self._rviz_terminated_by_controller = True
         if self._rviz_process is not None and self._rviz_process.poll() is None:
             self._rviz_process.terminate()
         return TriggerResponse(success=True)
