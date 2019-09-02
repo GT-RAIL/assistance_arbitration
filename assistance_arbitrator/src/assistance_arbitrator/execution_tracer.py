@@ -53,7 +53,7 @@ class ExecutionTracer(object):
 
     EXECUTION_TRACE_TOPIC = '/execution_monitor/trace'
     EXECUTION_TRACE_VECTOR_TOPIC = '/execution_monitor/trace_vector'
-    MAX_TRACE_LENGTH = 3999  # The longest trace so far has 1106 events
+    MAX_TRACE_LENGTH = 7999  # The longest trace so far has 1106 events
 
     # Stub event type definition
     TIME_EVENT = 255
