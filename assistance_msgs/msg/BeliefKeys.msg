@@ -40,7 +40,7 @@ string TASK_AT_COUCH=task_at_couch
 #### ROBOT state beliefs ####
 
 # Location of the robot
-# string ROBOT_AT_NAVIGATION_GOAL=robot_at_navigation_goal
+string ROBOT_AT_NAVIGATION_GOAL=robot_at_navigation_goal
 # string ROBOT_AT_DROPOFF=robot_at_dropoff
 # string ROBOT_AT_SCHUNK_MANIPULATION=robot_at_schunk_manipulation
 # string ROBOT_AT_GEAR_PICK_STATION=robot_at_gear_pick_station
