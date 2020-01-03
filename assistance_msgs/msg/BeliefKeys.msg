@@ -26,20 +26,28 @@ string SCHUNK_IS_MACHINING=schunk_is_machining
 string SCHUNK_IS_READY=schunk_is_ready
 
 # Location of the robot based on knowledge of move tasks
-string TASK_AT_GEAR_PICK_STATION=task_at_gear_pick_station
-string TASK_AT_KIT_STATION=task_at_kit_station
-string TASK_AT_SCREW_BIN_PICK_STATION=task_at_screw_bin_pick_station
-string TASK_AT_GEARBOX_PICK_STATION=task_at_gearbox_pick_station
-string TASK_AT_DROPOFF=task_at_dropoff
-string TASK_AT_SCHUNK_MANIPULATION=task_at_schunk_manipulation
+# string TASK_AT_GEAR_PICK_STATION=task_at_gear_pick_station
+# string TASK_AT_KIT_STATION=task_at_kit_station
+# string TASK_AT_SCREW_BIN_PICK_STATION=task_at_screw_bin_pick_station
+# string TASK_AT_GEARBOX_PICK_STATION=task_at_gearbox_pick_station
+# string TASK_AT_DROPOFF=task_at_dropoff
+# string TASK_AT_SCHUNK_MANIPULATION=task_at_schunk_manipulation
+
+string TASK_AT_KITCHEN_COUNTER=task_at_kitchen_counter
+string TASK_AT_DINING_TABLE=task_at_dining_table
+string TASK_AT_COUCH=task_at_couch
 
 #### ROBOT state beliefs ####
 
 # Location of the robot
-string ROBOT_AT_NAVIGATION_GOAL=robot_at_navigation_goal
-string ROBOT_AT_DROPOFF=robot_at_dropoff
-string ROBOT_AT_SCHUNK_MANIPULATION=robot_at_schunk_manipulation
-string ROBOT_AT_GEAR_PICK_STATION=robot_at_gear_pick_station
-string ROBOT_AT_KIT_STATION=robot_at_kit_station
-string ROBOT_AT_SCREW_BIN_PICK_STATION=robot_at_screw_bin_pick_station
-string ROBOT_AT_GEARBOX_PICK_STATION=robot_at_gearbox_pick_station
+# string ROBOT_AT_NAVIGATION_GOAL=robot_at_navigation_goal
+# string ROBOT_AT_DROPOFF=robot_at_dropoff
+# string ROBOT_AT_SCHUNK_MANIPULATION=robot_at_schunk_manipulation
+# string ROBOT_AT_GEAR_PICK_STATION=robot_at_gear_pick_station
+# string ROBOT_AT_KIT_STATION=robot_at_kit_station
+# string ROBOT_AT_SCREW_BIN_PICK_STATION=robot_at_screw_bin_pick_station
+# string ROBOT_AT_GEARBOX_PICK_STATION=robot_at_gearbox_pick_station
+
+string ROBOT_AT_KITCHEN_COUNTER=robot_at_kitchen_counter
+string ROBOT_AT_DINING_TABLE=robot_at_dining_table
+string ROBOT_AT_COUCH=robot_at_couch
