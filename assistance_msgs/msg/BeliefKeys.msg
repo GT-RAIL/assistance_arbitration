@@ -6,24 +6,24 @@
 #### TASK state beliefs ####
 
 # State of the large gear
-string LARGE_GEAR_IN_SCHUNK=large_gear_in_schunk
-string LARGE_GEAR_IN_KIT=large_gear_in_kit
+# string LARGE_GEAR_IN_SCHUNK=large_gear_in_schunk
+# string LARGE_GEAR_IN_KIT=large_gear_in_kit
 
 # State of the small gear
-string SMALL_GEAR_IN_KIT=small_gear_in_kit
+# string SMALL_GEAR_IN_KIT=small_gear_in_kit
 
 # State of the gearboxes
-string GEARBOX_TOP_IN_KIT=gearbox_top_in_kit
-string GEARBOX_BOTTOM_IN_KIT=gearbox_bottom_in_kit
+# string GEARBOX_TOP_IN_KIT=gearbox_top_in_kit
+# string GEARBOX_BOTTOM_IN_KIT=gearbox_bottom_in_kit
 
 # State of the bolts
-string ZERO_BOLTS_IN_KIT=zero_bolts_in_kit
-string ONE_BOLT_IN_KIT=one_bolt_in_kit
-string TWO_BOLTS_IN_KIT=two_bolts_in_kit
+# string ZERO_BOLTS_IN_KIT=zero_bolts_in_kit
+# string ONE_BOLT_IN_KIT=one_bolt_in_kit
+# string TWO_BOLTS_IN_KIT=two_bolts_in_kit
 
 # State of the SCHUNK
-string SCHUNK_IS_MACHINING=schunk_is_machining
-string SCHUNK_IS_READY=schunk_is_ready
+# string SCHUNK_IS_MACHINING=schunk_is_machining
+# string SCHUNK_IS_READY=schunk_is_ready
 
 # Location of the robot based on knowledge of move tasks
 # string TASK_AT_GEAR_PICK_STATION=task_at_gear_pick_station
