@@ -188,7 +188,7 @@ class TaskServer(object):
                 # There was some unexpected error in the underlying code.
                 # Capture it and send it to the recovery mechanism.
                 rospy.logerr("Exception in task execution: {}".format(e))
-                rospy.logerr(traceback.format_exc(e))
+                rospy.logerr(traceback.format_exc())
                 task.notify_aborted()
                 variables = task.get_executor_context()
                 variables['exception'] = e
