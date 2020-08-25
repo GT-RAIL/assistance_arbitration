@@ -1,4 +1,0 @@
-# Service definition to create a person in simulation
-string id  # An empty string generates a random id
----
-rail_people_detection_msgs/Person person

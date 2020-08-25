@@ -1,2 +1,0 @@
-# The location to load recovery strategies from
-recovery_strategies: fetch_tasks.predefined_strategies

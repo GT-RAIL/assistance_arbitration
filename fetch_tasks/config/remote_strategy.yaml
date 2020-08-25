@@ -1,6 +1,0 @@
-# The location to load the controller
-remote_controller: fetch_tasks.remote_controller
-
-# Launch an RViz view (TODO: this should be in the domain of the controller, so
-# in a future iteration, move this into the controller)
-rviz: "$(find fetch_tasks)/rviz/fetch.rviz"
