@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>assistance_msgs</name>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <description>The assistance_msgs package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
@@ -52,8 +52,6 @@
 
   <depend>actionlib_msgs</depend>
   <depend>geometry_msgs</depend>
-  <depend>manipulation_actions</depend>
-  <depend>rail_manipulation_msgs</depend>
   <depend>rospy</depend>
   <depend>std_msgs</depend>
 
